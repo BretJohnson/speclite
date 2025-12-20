@@ -10,7 +10,7 @@
 
 <p align="center">
     <a href="https://github.com/BretJohnson/speclite/actions/workflows/ci.yml"><img src="https://github.com/BretJohnson/speclite/actions/workflows/ci.yml/badge.svg" alt="CI"/></a>
-    <a href="./CHANGELOG.md"><img src="https://img.shields.io/badge/version-0.0.4-blue" alt="Version"/></a>
+    <a href="./CHANGELOG.md"><img src="https://img.shields.io/badge/version-0.0.5-blue" alt="Version"/></a>
     <a href="https://github.com/BretJohnson/speclite/stargazers"><img src="https://img.shields.io/github/stars/BretJohnson/speclite?style=social" alt="GitHub stars"/></a>
     <a href="https://github.com/BretJohnson/speclite/blob/main/LICENSE"><img src="https://img.shields.io/github/license/BretJohnson/speclite" alt="License"/></a>
 </p>

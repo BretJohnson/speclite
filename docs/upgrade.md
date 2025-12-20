@@ -53,7 +53,6 @@ Running `speclite init --here --force` will update:
 - ✅ **Slash command files** (`.claude/commands/`, `.github/prompts/`, etc.)
 - ✅ **Script files** (`.speclite/scripts/`)
 - ✅ **Template files** (`.speclite/templates/`)
-- ✅ **Shared memory files** (`.speclite/memory/`) - **⚠️ See warnings below**
 
 ### What stays safe?
 
@@ -61,10 +60,9 @@ These files are **never touched** by the upgrade—the template packages don't e
 
 - ✅ **Your change specifications** (`.speclite/changes/001-my-feature/spec.md`, etc.) - **CONFIRMED SAFE**
 - ✅ **Your implementation plans** (`.speclite/changes/001-my-feature/plan.md`, `tasks.md`, etc.) - **CONFIRMED SAFE**
+- ✅ **Shared memory files** (`.speclite/memory/`) - **CONFIRMED SAFE**
 - ✅ **Your source code** - **CONFIRMED SAFE**
 - ✅ **Your git history** - **CONFIRMED SAFE**
-
-The `.speclite/changes/` directory is completely excluded from template packages and will never be modified during upgrades.
 
 ### Update command
 
@@ -94,34 +92,20 @@ Proceed? [y/N]
 
 With `--force`, it skips the confirmation and proceeds immediately.
 
-**Important: Your `.speclite/changes/` directory is always safe.** The `--force` flag only affects template files (commands, scripts, templates, memory). Your feature specifications, plans, and tasks in `.speclite/changes/` are never included in upgrade packages and cannot be overwritten.
-
 ---
 
-## ⚠️ Important Warnings
+## ⚠️ Important Notes
 
-### 1. Constitution file will be overwritten
+### 1. Constitution file
 
-**Known issue:** `speclite init --here --force` currently overwrites `.speclite/memory/constitution.md` with the default template, erasing any customizations you made.
+Your existing `memory/constitution.md` file will be untouched. If you wish
+to recreate the constiution with the possibly updated constitution template,
+delete the constitution and then rerun `/sl.constitution`.
 
-**Workaround:**
-
-```bash
-# 1. Back up your constitution before upgrading
-cp .speclite/memory/constitution.md .speclite/memory/constitution-backup.md
-
-# 2. Run the upgrade
-speclite init --here --force --ai copilot
-
-# 3. Restore your customized constitution
-mv .speclite/memory/constitution-backup.md .speclite/memory/constitution.md
-```
-
-Or use git to restore it:
 
 ```bash
-# After upgrade, restore from git history
-git restore .speclite/memory/constitution.md
+rm .speclite/memory/constitution.md
+# Then run /sl.constitution in your agent to recreate it
 ```
 
 ### 2. Custom template modifications
@@ -134,28 +118,6 @@ cp -r .speclite/templates .speclite/templates-backup
 
 # After upgrade, merge your changes back manually
 ```
-
-### 3. Duplicate slash commands (IDE-based agents)
-
-Some IDE-based agents (like Kilo Code, Windsurf) may show **duplicate slash commands** after upgrading—both old and new versions appear.
-
-**Solution:** Manually delete the old command files from your agent's folder.
-
-**Example for Kilo Code:**
-
-```bash
-# Navigate to the agent's commands folder
-cd .kilocode/rules/
-
-# List files and identify duplicates
-ls -la
-
-# Delete old versions (example filenames - yours may differ)
-rm sl.specify-old.md
-rm sl.plan-v1.md
-```
-
-Restart your IDE to refresh the command list.
 
 ---
 
@@ -170,15 +132,12 @@ uv tool install speclite-cli --force --from git+https://github.com/BretJohnson/s
 # Update project files to get new commands
 speclite init --here --force --ai copilot
 
-# Restore your constitution if customized
-git restore .speclite/memory/constitution.md
-```
+Your constitution is preserved automatically.
 
-### Scenario 2: "I customized templates and constitution"
+### Scenario 2: "I customized templates"
 
 ```bash
-# 1. Back up customizations
-cp .speclite/memory/constitution.md /tmp/constitution-backup.md
+# 1. Back up custom templates
 cp -r .speclite/templates /tmp/templates-backup
 
 # 2. Upgrade CLI
@@ -188,40 +147,22 @@ uv tool install speclite-cli --force --from git+https://github.com/BretJohnson/s
 speclite init --here --force --ai copilot
 
 # 4. Restore customizations
-mv /tmp/constitution-backup.md .speclite/memory/constitution.md
 # Manually merge template changes if needed
 ```
 
-### Scenario 3: "I see duplicate slash commands in my IDE"
-
-This happens with IDE-based agents (Kilo Code, Windsurf, Roo Code, etc.).
-
-```bash
-# Find the agent folder (example: .kilocode/rules/)
-cd .kilocode/rules/
-
-# List all files
-ls -la
-
-# Delete old command files
-rm sl.old-command-name.md
-
-# Restart your IDE
-```
-
-### Scenario 4: "I'm working on a project without Git"
+### Scenario 3: "I'm working on a project without Git"
 
 If you initialized your project with `--no-git`, you can still upgrade:
 
 ```bash
 # Manually back up files you customized
-cp .speclite/memory/constitution.md /tmp/constitution-backup.md
+cp -r .speclite/templates /tmp/templates-backup
 
 # Run upgrade
 speclite init --here --force --ai copilot --no-git
 
 # Restore customizations
-mv /tmp/constitution-backup.md .speclite/memory/constitution.md
+# Manually merge template changes if needed
 ```
 
 The `--no-git` flag skips git initialization but doesn't affect file updates.
@@ -297,20 +238,6 @@ This tells SpecLite which change spec directory to use when creating plans and t
    - Codex requires `CODEX_HOME` environment variable
    - Some agents need workspace restart or cache clearing
 
-### "I lost my constitution customizations"
-
-**Fix:** Restore from git or backup:
-
-```bash
-# If you committed before upgrading
-git restore .speclite/memory/constitution.md
-
-# If you backed up manually
-cp /tmp/constitution-backup.md .speclite/memory/constitution.md
-```
-
-**Prevention:** Always commit or back up `constitution.md` before upgrading.
-
 ### "Warning: Current directory is not empty"
 
 **Full warning message:**
@@ -336,7 +263,6 @@ Only SpecLite infrastructure files:
 - Agent command files (`.claude/commands/`, `.github/prompts/`, etc.)
 - Scripts in `.speclite/scripts/`
 - Templates in `.speclite/templates/`
-- Memory files in `.speclite/memory/` (including constitution)
 
 **What stays untouched:**
 
@@ -344,6 +270,7 @@ Only SpecLite infrastructure files:
 - Your source code files
 - Your `.git/` directory and git history
 - Any other files not part of SpecLite templates
+- Memory files in `.speclite/memory/` (constitution is created via `/sl.constitution`)
 
 **How to respond:**
 
@@ -360,8 +287,6 @@ Only SpecLite infrastructure files:
 - ✅ **Expected** when upgrading an existing SpecLite project
 - ✅ **Expected** when adding SpecLite to an existing codebase
 - ⚠️ **Unexpected** if you thought you were creating a new project in an empty directory
-
-**Prevention tip:** Before upgrading, commit or back up your `.speclite/memory/constitution.md` if you customized it.
 
 ### "CLI upgrade doesn't seem to work"
 

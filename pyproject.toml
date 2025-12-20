@@ -1,6 +1,6 @@
 [project]
 name = "speclite-cli"
-version = "0.0.4"
+version = "0.0.5"
 description = "SpecLite CLI. A lightweight tool to bootstrap your projects for Spec-Driven Development (SDD)."
 requires-python = ">=3.11"
 dependencies = [
@@ -22,4 +22,3 @@ packages = ["src/speclite_cli"]
 [tool.hatch.build.targets.wheel.force-include]
 "templates" = "speclite_cli/templates"
 "scripts" = "speclite_cli/scripts"
-"memory" = "speclite_cli/memory"

@@ -760,7 +760,7 @@ def download_and_extract_template(project_path: Path, ai_assistants: list[str], 
         with _resource_root_path() as resource_root:
             templates_dir = _require_resource_dir(resource_root, "templates")
             scripts_dir = _require_resource_dir(resource_root, "scripts")
-            memory_dir = _require_resource_dir(resource_root, "memory")
+            memory_dir = resource_root / "memory"
 
             if tracker:
                 tracker.complete("bundle", "ready")
@@ -770,7 +770,10 @@ def download_and_extract_template(project_path: Path, ai_assistants: list[str], 
                 spec_dir = staging_root / ".speclite"
                 spec_dir.mkdir(parents=True, exist_ok=True)
 
-                shutil.copytree(memory_dir, spec_dir / "memory", dirs_exist_ok=True)
+                memory_dest = spec_dir / "memory"
+                memory_dest.mkdir(parents=True, exist_ok=True)
+                if memory_dir.is_dir():
+                    _copy_dir_contents(memory_dir, memory_dest)
                 _copy_dir_contents(scripts_dir, spec_dir / "scripts")
                 _copy_template_files(templates_dir, spec_dir / "templates")
 

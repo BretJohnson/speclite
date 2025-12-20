@@ -579,18 +579,13 @@ echo "Cleaning up..."
 rm gcm-linux_amd64.2.6.1.deb
 ```
 
-## 👥 Maintainers
-
-- Den Delimarsky ([@localden](https://github.com/localden))
-- John Lam ([@jflam](https://github.com/jflam))
-
 ## 💬 Support
 
 For support, please open a [GitHub issue](https://github.com/BretJohnson/speclite/issues/new). We welcome bug reports, feature requests, and questions about using Spec-Driven Development.
 
 ## 🙏 Acknowledgements
 
-This project is heavily influenced by and based on the work and research of [John Lam](https://github.com/jflam).
+This project is based on [GitHub Spec Kit](https://github.com/github/spec-kit), which was in turn heavily influenced by and based on the work and research of [John Lam](https://github.com/jflam).
 
 ## 📄 License
 

@@ -68,13 +68,14 @@ When working on SpecLite:
 
    ```bash
    cd <my-test-project>
-   uvx --from ~/src/speclite speclite init .
+   uvx --refresh --from ~/src/speclite speclite init .
    ```
+
+   `--refresh` ignores what's in the `uvx` cache. It's sometimes needed to get the latest changes.
 
 2. **Open and test the agent**
 
    Open the AI agent(s) to verify the commands work as expected.
-
 
 ## Resources
 

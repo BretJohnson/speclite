@@ -7,7 +7,6 @@
         "sl.implement": true
     },
     "chat.tools.terminal.autoApprove": {
-        ".speclite/scripts/bash/": true,
-        ".speclite/scripts/powershell/": true
+        ".speclite/scripts/": true
     }
 }

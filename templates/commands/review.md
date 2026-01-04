@@ -1,8 +1,8 @@
 ---
 description: Review the implementation for the current feature.
 scripts:
-  sh: scripts/bash/check-prerequisites.sh --json
-  ps: scripts/powershell/check-prerequisites.ps1 -Json
+  sh: .speclite/scripts/check-prerequisites.sh --json
+  ps: .speclite/scripts/check-prerequisites.ps1 -Json
 ---
 
 ## User Input

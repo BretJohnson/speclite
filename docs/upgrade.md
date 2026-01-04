@@ -52,7 +52,8 @@ Running `speclite init --here --force` will update:
 
 - ✅ **Slash command files** (`.claude/commands/`, `.github/prompts/`, etc.)
 - ✅ **Script files** (`.speclite/scripts/`)
-- ✅ **Template files** (`.speclite/templates/`)
+- ✅ **Template defaults** (`.speclite/templates/*.default.md`) *(always refreshed)*
+- ✅ **Template live files** (`.speclite/templates/*.md`) *(updated only if uncustomized; customized files are preserved)*
 
 ### What stays safe?
 
@@ -82,15 +83,7 @@ speclite init --here --force --ai copilot
 
 ### Understanding the `--force` flag
 
-Without `--force`, the CLI warns you and asks for confirmation:
-
-```text
-Warning: Current directory is not empty (25 items)
-Template files will be merged with existing content and may overwrite existing files
-Proceed? [y/N]
-```
-
-With `--force`, it skips the confirmation and proceeds immediately.
+Older versions prompted for confirmation when running `speclite init --here` in a non-empty directory. Current versions proceed without prompting; `--force` is kept for compatibility.
 
 ---
 
@@ -110,14 +103,9 @@ rm .speclite/memory/constitution.md
 
 ### 2. Custom template modifications
 
-If you customized any templates in `.speclite/templates/`, the upgrade will overwrite them. Back them up first:
+If you customized any templates in `.speclite/templates/`, the upgrade preserves your live copies (`*.md`). The packaged defaults are stored alongside as `*.default.md` and are refreshed during upgrade.
 
-```bash
-# Back up custom templates
-cp -r .speclite/templates .speclite/templates-backup
-
-# After upgrade, merge your changes back manually
-```
+If SpecLite detects that a default changed while you have customizations, it will back up the old default as `*.default.prev.md` and print instructions during `speclite init`.
 
 ---
 
@@ -131,23 +119,18 @@ uv tool install speclite-cli --force --from git+https://github.com/BretJohnson/s
 
 # Update project files to get new commands
 speclite init --here --force --ai copilot
+```
 
 Your constitution is preserved automatically.
 
 ### Scenario 2: "I customized templates"
 
 ```bash
-# 1. Back up custom templates
-cp -r .speclite/templates /tmp/templates-backup
-
-# 2. Upgrade CLI
+# 1. Upgrade CLI
 uv tool install speclite-cli --force --from git+https://github.com/BretJohnson/speclite.git
 
-# 3. Update project
+# 2. Update project
 speclite init --here --force --ai copilot
-
-# 4. Restore customizations
-# Manually merge template changes if needed
 ```
 
 ### Scenario 3: "I'm working on a project without Git"
@@ -155,14 +138,8 @@ speclite init --here --force --ai copilot
 If you initialized your project with `--no-git`, you can still upgrade:
 
 ```bash
-# Manually back up files you customized
-cp -r .speclite/templates /tmp/templates-backup
-
 # Run upgrade
 speclite init --here --force --ai copilot --no-git
-
-# Restore customizations
-# Manually merge template changes if needed
 ```
 
 The `--no-git` flag skips git initialization but doesn't affect file updates.
@@ -238,31 +215,13 @@ This tells SpecLite which change spec directory to use when creating plans and t
    - Codex requires `CODEX_HOME` environment variable
    - Some agents need workspace restart or cache clearing
 
-### "Warning: Current directory is not empty"
-
-**Full warning message:**
-
-```text
-Warning: Current directory is not empty (25 items)
-Template files will be merged with existing content and may overwrite existing files
-Do you want to continue? [y/N]
-```
-
-**What this means:**
-
-This warning appears when you run `speclite init --here` (or `speclite init .`) in a directory that already has files. It's telling you:
-
-1. **The directory has existing content** - In the example, 25 files/folders
-2. **Files will be merged** - New template files will be added alongside your existing files
-3. **Some files may be overwritten** - If you already have SpecLite files (`.claude/`, `.speclite/`, etc.), they'll be replaced with the new versions
-
 **What gets overwritten:**
 
 Only SpecLite infrastructure files:
 
 - Agent command files (`.claude/commands/`, `.github/prompts/`, etc.)
 - Scripts in `.speclite/scripts/`
-- Templates in `.speclite/templates/`
+- Templates in `.speclite/templates/` (defaults refreshed; customized live files preserved)
 
 **What stays untouched:**
 
@@ -271,24 +230,6 @@ Only SpecLite infrastructure files:
 - Your `.git/` directory and git history
 - Any other files not part of SpecLite templates
 - Memory files in `.speclite/memory/` (constitution is created via `/sl.constitution`)
-
-**How to respond:**
-
-- **Type `y` and press Enter** - Proceed with the merge (recommended if upgrading)
-- **Type `n` and press Enter** - Cancel the operation
-- **Use `--force` flag** - Skip this confirmation entirely:
-
-  ```bash
-  speclite init --here --force --ai copilot
-  ```
-
-**When you see this warning:**
-
-- ✅ **Expected** when upgrading an existing SpecLite project
-- ✅ **Expected** when adding SpecLite to an existing codebase
-- ⚠️ **Unexpected** if you thought you were creating a new project in an empty directory
-
-### "CLI upgrade doesn't seem to work"
 
 Verify the installation:
 

@@ -5,6 +5,21 @@ All notable changes to the SpecLite CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.6] - 2026-01-04
+
+### Added
+
+- `speclite check` now reports customized templates (live `.md` differs from `.default.md`), with a count and a quick diff hint.
+- Update-time guidance for resolving template merges when defaults change while you have customizations, including a suggested `git merge-file` command.
+
+### Changed
+
+- Templates now install as paired files in `.speclite/templates/`: `<name>.default.md` (packaged baseline) and `<name>.md` (user-editable).
+- Safe template upgrades: customized live templates are preserved; when defaults change, the previous default is backed up as `*.default.prev.md` and upgrade instructions are shown.
+- `speclite init` treats an existing `.speclite/` directory as an update and blocks updates until any pending merges (`*.default.prev.md`) are resolved.
+- Scripts now install to `.speclite/scripts/` (flattened; no `bash/`/`powershell/` subdirectories).
+- Bundled command templates use explicit `.speclite/...` paths (no internal path rewriting during generation).
+
 ## [0.0.5] - 2025-12-20
 
 ### Changed

@@ -599,12 +599,6 @@ def _require_resource_dir(root: Path, name: str) -> Path:
         raise FileNotFoundError(f"Missing bundled resource directory: {path}")
     return path
 
-def _rewrite_paths(text: str) -> str:
-    text = re.sub(r"(/?)memory/", ".speclite/memory/", text)
-    text = re.sub(r"(/?)scripts/", ".speclite/scripts/", text)
-    text = re.sub(r"(/?)templates/", ".speclite/templates/", text)
-    return text
-
 def _strip_frontmatter_sections(text: str) -> str:
     lines = text.split("\n")
     out = []
@@ -678,7 +672,6 @@ def _generate_commands(templates_dir: Path, output_dir: Path, *, agent: str, ext
             body = body.replace("{AGENT_SCRIPT}", agent_script_command)
         body = _strip_frontmatter_sections(body)
         body = body.replace("{ARGS}", arg_format).replace("__AGENT__", agent)
-        body = _rewrite_paths(body)
 
         if ext == "toml":
             body = body.replace("\\", "\\\\").rstrip("\n")
@@ -712,46 +705,286 @@ def _copy_dir_contents(src: Path, dest: Path) -> None:
         else:
             shutil.copy2(item, target)
 
-def _copy_template_files(templates_dir: Path, dest_dir: Path) -> None:
+def _full_suffix(path: Path) -> str:
+    """Return the concatenated suffix string for a path.
+
+    Example:
+        >>> 'clarify.default.md' -> '.default.md'
+    """
+    return "".join(path.suffixes)
+
+def _stem_without_full_suffix(path: Path) -> str:
+    """Return the filename with all suffixes removed.
+
+    Example:
+        >>> 'clarify.default.md' -> 'clarify'
+    """
+    suffix = _full_suffix(path)
+    return path.name[:-len(suffix)] if suffix else path.name
+
+def _defaulted_path_for_live(path: Path) -> Path:
+    """Return the `.default` baseline path for a live template path.
+
+    Example:
+        >>> 'plan-template.md' -> 'plan-template.default.md'
+    """
+    # Example: `plan-template.md` -> `plan-template.default.md`
+    suffixes = path.suffixes
+    suffix = _full_suffix(path)
+    stem = _stem_without_full_suffix(path)
+    if suffixes and suffixes[0] == ".default":
+        return path
+    return path.with_name(f"{stem}.default{suffix}")
+
+def _prev_default_path(default_path: Path) -> Path:
+    """Return the backup path for a `.default` template.
+
+    Example:
+        >>> 'plan-template.default.md'  # 'plan-template.default.prev.md'
+    """
+    return default_path.with_name(f"{default_path.stem}.prev{default_path.suffix}")
+
+def _read_bytes_or_none(path: Path) -> bytes | None:
+    try:
+        return path.read_bytes()
+    except FileNotFoundError:
+        return None
+
+def _write_bytes(path: Path, content: bytes) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(content)
+
+def _format_path_for_display(path: Path, *, project_root: Path | None = None) -> str:
+    """Format a path for console output (prefers repo-relative, colored)."""
+    return f"[cyan]{_format_path_for_copy(path, project_root=project_root)}[/cyan]"
+
+def _format_path_for_copy(path: Path, *, project_root: Path | None = None) -> str:
+    """Format a path for copy/paste output (prefers repo-relative, no markup)."""
+    if project_root is not None:
+        try:
+            return path.relative_to(project_root).as_posix()
+        except ValueError:
+            pass
+    # Fallback: shorten to `.speclite/...` when possible.
+    parts = list(path.parts)
+    if ".speclite" in parts:
+        idx = parts.index(".speclite")
+        return Path(*parts[idx:]).as_posix()
+    return path.as_posix()
+
+def _find_pending_default_backups(templates_root: Path) -> list[Path]:
+    """Find pending `.default.prev.md` backups that indicate a required manual merge."""
+    if not templates_root.is_dir():
+        return []
+    return sorted(templates_root.rglob("*.default.prev.md"))
+
+def _template_merge_triplet_from_prev(prev_default_path: Path) -> tuple[Path, Path, Path] | None:
+    """Return (live, new_default, prev_default) paths from a `.default.prev.md` backup."""
+    name = prev_default_path.name
+    if not name.endswith(".default.prev.md"):
+        return None
+    base = name[: -len(".default.prev.md")]
+    live = prev_default_path.with_name(base + ".md")
+    new_default = prev_default_path.with_name(base + ".default.md")
+    return (live, new_default, prev_default_path)
+
+def _render_template_merge_required_notice(prev_default_paths: list[Path], *, project_root: Path) -> str:
+    items: list[tuple[Path, Path, Path]] = []
+    for prev_path in prev_default_paths:
+        triplet = _template_merge_triplet_from_prev(prev_path)
+        if triplet is not None:
+            items.append(triplet)
+
+    if not items:
+        return ""
+
+    live_list = "\n".join(f"  - {_format_path_for_display(live, project_root=project_root)}" for live, _, _ in items)
+    lines: list[str] = [
+        f"[yellow]Merge required:[/yellow] {len(items)} template(s) you customized have updated defaults.",
+        live_list,
+        "",
+        "Suggested 3-way merge per template (requires git installed, but does not require a git repo):",
+        "",
+    ]
+
+    for live, new_default, prev_default in items:
+        live_copy = _format_path_for_copy(live, project_root=project_root)
+        default_copy = _format_path_for_copy(new_default, project_root=project_root)
+        prev_copy = _format_path_for_copy(prev_default, project_root=project_root)
+        label_width = max(
+            len("Live (custom):"),
+            len("New default:"),
+            len("Previous default:"),
+        )
+
+        lines.extend(
+            [
+                f"[yellow]{live.name}[/yellow]",
+                f"{'Live (custom):':<{label_width}} {_format_path_for_display(live, project_root=project_root)}",
+                f"{'New default:':<{label_width}} {_format_path_for_display(new_default, project_root=project_root)}",
+                f"{'Previous default:':<{label_width}} {_format_path_for_display(prev_default, project_root=project_root)}",
+                f"1. [cyan]git merge-file '{live_copy}' '{prev_copy}' '{default_copy}'[/cyan]",
+                "2. Search for conflict markers and resolve if present.",
+                f"3. Delete previous default when done: {_format_path_for_display(prev_default, project_root=project_root)}",
+                "",
+            ]
+        )
+
+    while lines and not lines[-1].strip():
+        lines.pop()
+    return "\n".join(lines)
+
+def _render_pending_template_merges_error(prev_default_paths: list[Path], *, project_root: Path) -> str:
+    body = _render_template_merge_required_notice(prev_default_paths, project_root=project_root)
+    if not body:
+        return ""
+    # Recolor the output to red and add a stronger preamble.
+    body = body.replace("[yellow]", "[red]").replace("[/yellow]", "[/red]")
+    lines = body.splitlines()
+    if lines:
+        lines[0] = lines[0].replace("[red]Merge required:[/red]", "[red]Unresolved merges:[/red]")
+
+    return "\n".join(
+        [
+            "[red]You still have unresolved template merges from a previous SpecLite update. You must resolve them first before installing again.[/red]",
+            "",
+            "\n".join(lines),
+            "",
+            "After resolving and deleting the previous default file(s), re-run speclite init.",
+        ]
+    )
+
+def _sync_defaulted_file(
+    *,
+    new_default_content: bytes,
+    live_path: Path,
+    default_path: Path,
+    notices: list[str] | None = None,
+    project_root: Path | None = None,
+) -> None:
+    """Sync a live file alongside a `.default` baseline.
+
+    Rules:
+    - If live is missing OR live exactly equals baseline, update both to new.
+    - If live differs from baseline:
+      - If baseline is unchanged, keep both contents (touch baseline).
+      - If baseline changes, back up old baseline and update baseline; keep live.
+    """
+    existing_live = _read_bytes_or_none(live_path)
+    existing_default = _read_bytes_or_none(default_path)
+
+    if existing_live is None:
+        _write_bytes(default_path, new_default_content)
+        _write_bytes(live_path, new_default_content)
+        return
+
+    if existing_default is None:
+        # Baseline missing. Create baseline and preserve user edits if any.
+        _write_bytes(default_path, new_default_content)
+        if existing_live == new_default_content:
+            _write_bytes(live_path, new_default_content)
+        elif notices is not None:
+            notices.append(
+                "[yellow]Created missing default template.[/yellow]\n"
+                f"Default: {_format_path_for_display(default_path, project_root=project_root)}\n"
+                f"Live (unchanged): {_format_path_for_display(live_path, project_root=project_root)}\n"
+                "Verify your live file still matches the latest default with any intended customizations applied."
+            )
+        return
+
+    if existing_live == existing_default:
+        _write_bytes(default_path, new_default_content)
+        _write_bytes(live_path, new_default_content)
+        return
+
+    # Customized live file: keep it stable.
+    if new_default_content == existing_default:
+        # No default change; touch the file so installs reflect an update.
+        os.utime(default_path, None)
+        return
+
+    backup_path = _prev_default_path(default_path)
+    if backup_path.exists():
+        raise FileExistsError(
+            f"Previous default backup already exists: {backup_path}. "
+            "Merge and delete .default.prev.md files then restart the install."
+        )
+    default_path.rename(backup_path)
+    _write_bytes(default_path, new_default_content)
+    # Merge guidance is rendered once at the end of `speclite init` by scanning for `*.default.prev.md` files.
+
+def _stage_templates(templates_dir: Path, dest_dir: Path) -> None:
+    """Stage bundled templates into dest_dir (no `.default` variants).
+
+    `.default` baselines are handled during the apply/merge step so upgrades can
+    compare the incoming (staged) template against the existing live+default pair.
+    """
     dest_dir.mkdir(parents=True, exist_ok=True)
     for path in templates_dir.rglob("*"):
         if path.is_dir():
             continue
         rel_path = path.relative_to(templates_dir)
-        if rel_path.parts and rel_path.parts[0] == "commands":
-            continue
         if rel_path.name == "vscode-settings.json":
             continue
-        dest_path = dest_dir / rel_path
-        dest_path.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(path, dest_path)
+        out_path = dest_dir / rel_path
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(path, out_path)
 
-def _apply_template_tree(source_dir: Path, project_path: Path, is_current_dir: bool, *, verbose: bool = True, tracker: StepTracker | None = None) -> None:
-    if not is_current_dir:
-        shutil.copytree(source_dir, project_path)
-        return
+def _is_speclite_templates_path(project_path: Path, dest_file: Path) -> bool:
+    try:
+        rel = dest_file.relative_to(project_path)
+    except ValueError:
+        return False
+    return len(rel.parts) >= 2 and rel.parts[0] == ".speclite" and rel.parts[1] == "templates"
 
-    for item in source_dir.iterdir():
-        dest_path = project_path / item.name
-        if item.is_dir():
-            if dest_path.exists():
-                for sub_item in item.rglob('*'):
-                    if sub_item.is_file():
-                        rel_path = sub_item.relative_to(item)
-                        dest_file = dest_path / rel_path
-                        dest_file.parent.mkdir(parents=True, exist_ok=True)
-                        if dest_file.name == "settings.json" and dest_file.parent.name == ".vscode":
-                            handle_vscode_settings(sub_item, dest_file, rel_path, verbose, tracker)
-                        else:
-                            shutil.copy2(sub_item, dest_file)
-            else:
-                shutil.copytree(item, dest_path)
-        else:
-            if dest_path.exists() and verbose and not tracker:
-                console.print(f"[yellow]Overwriting file:[/yellow] {item.name}")
-            shutil.copy2(item, dest_path)
+def _apply_template_tree(
+    source_dir: Path,
+    project_path: Path,
+    is_current_dir: bool,
+    *,
+    verbose: bool = True,
+    tracker: StepTracker | None = None,
+    notices: list[str] | None = None,
+) -> None:
+    project_path.mkdir(parents=True, exist_ok=True)
 
-def download_and_extract_template(project_path: Path, ai_assistants: list[str], script_type: str, is_current_dir: bool = False, *, verbose: bool = True, tracker: StepTracker | None = None) -> Path:
+    for sub_item in source_dir.rglob("*"):
+        if sub_item.is_dir():
+            continue
+
+        rel_path = sub_item.relative_to(source_dir)
+        dest_file = project_path / rel_path
+        dest_file.parent.mkdir(parents=True, exist_ok=True)
+
+        if dest_file.name == "settings.json" and dest_file.parent.name == ".vscode":
+            handle_vscode_settings(sub_item, dest_file, rel_path, verbose, tracker)
+            continue
+
+        if _is_speclite_templates_path(project_path, dest_file) and dest_file.suffix.lower() == ".md" and ".default" not in dest_file.suffixes:
+            _sync_defaulted_file(
+                new_default_content=sub_item.read_bytes(),
+                live_path=dest_file,
+                default_path=_defaulted_path_for_live(dest_file),
+                notices=notices,
+                project_root=project_path,
+            )
+            continue
+
+        if dest_file.exists() and verbose and not tracker and is_current_dir:
+            console.print(f"[yellow]Overwriting file:[/yellow] {rel_path}")
+        shutil.copy2(sub_item, dest_file)
+
+def download_and_extract_template(
+    project_path: Path,
+    ai_assistants: list[str],
+    script_type: str,
+    *,
+    is_current_dir: bool = False,
+    is_update: bool = False,
+    verbose: bool = True,
+    tracker: StepTracker | None = None,
+    notices: list[str] | None = None,
+) -> Path:
     """Generate templates from bundled resources and apply them to the project."""
     if tracker:
         tracker.start("bundle", "loading bundled templates")
@@ -766,6 +999,11 @@ def download_and_extract_template(project_path: Path, ai_assistants: list[str], 
                 tracker.complete("bundle", "ready")
 
             with tempfile.TemporaryDirectory() as temp_dir:
+                # Stage *all* SpecLite files into a temporary directory first, then merge/copy
+                # them into the final destination. This keeps installs consistent between:
+                # - `speclite init <new-dir>` (fresh install), and
+                # - `speclite init --here` (upgrade/merge into an existing repo),
+                # and avoids partially-updated repos if an error occurs mid-generation.
                 staging_root = Path(temp_dir)
                 spec_dir = staging_root / ".speclite"
                 spec_dir.mkdir(parents=True, exist_ok=True)
@@ -774,13 +1012,20 @@ def download_and_extract_template(project_path: Path, ai_assistants: list[str], 
                 memory_dest.mkdir(parents=True, exist_ok=True)
                 if memory_dir.is_dir():
                     _copy_dir_contents(memory_dir, memory_dest)
-                _copy_dir_contents(scripts_dir, spec_dir / "scripts")
-                _copy_template_files(templates_dir, spec_dir / "templates")
+                # Scripts are installed under `.speclite/scripts/`.
+                scripts_dest = spec_dir / "scripts"
+                _copy_dir_contents(scripts_dir / "bash", scripts_dest)
+                _copy_dir_contents(scripts_dir / "powershell", scripts_dest)
+
+                # Templates live under `.speclite/templates/` with a `.default` baseline alongside.
+                _stage_templates(templates_dir, spec_dir / "templates")
 
                 if tracker:
                     tracker.start("generate", "rendering commands")
                 command_count = 0
 
+                # Agent command files are generated into the same staging tree so the apply step
+                # can update everything in one pass.
                 for ai_assistant in ai_assistants:
                     if ai_assistant == "claude":
                         command_count += _generate_commands(
@@ -848,7 +1093,16 @@ def download_and_extract_template(project_path: Path, ai_assistants: list[str], 
 
                 if tracker:
                     tracker.start("apply", "writing templates")
-                _apply_template_tree(staging_root, project_path, is_current_dir, verbose=verbose, tracker=tracker)
+                # Apply the staged tree to the destination project directory (copy or merge),
+                # including template default/live sync behavior under `.speclite/templates/`.
+                _apply_template_tree(
+                    staging_root,
+                    project_path,
+                    is_current_dir,
+                    verbose=verbose,
+                    tracker=tracker,
+                    notices=notices,
+                )
                 if tracker:
                     tracker.complete("apply", "written")
 
@@ -864,7 +1118,7 @@ def download_and_extract_template(project_path: Path, ai_assistants: list[str], 
 
 
 def ensure_executable_scripts(project_path: Path, tracker: StepTracker | None = None) -> None:
-    """Ensure POSIX .sh scripts under .speclite/scripts (recursively) have execute bits (no-op on Windows)."""
+    """Ensure POSIX .sh scripts under `.speclite/scripts/` have execute bits (no-op on Windows)."""
     if os.name == "nt":
         return  # Windows: skip silently
     scripts_root = project_path / ".speclite" / "scripts"
@@ -960,18 +1214,6 @@ def init(
     if here:
         project_name = Path.cwd().name
         project_path = Path.cwd()
-
-        existing_items = list(project_path.iterdir())
-        if existing_items:
-            console.print(f"[yellow]Warning:[/yellow] Current directory is not empty ({len(existing_items)} items)")
-            console.print("[yellow]Template files will be merged with existing content and may overwrite existing files[/yellow]")
-            if force:
-                console.print("[cyan]--force supplied: skipping confirmation and proceeding with merge[/cyan]")
-            else:
-                response = typer.confirm("Do you want to continue?")
-                if not response:
-                    console.print("[yellow]Operation cancelled[/yellow]")
-                    raise typer.Exit(0)
     else:
         project_path = Path(project_name).resolve()
         if project_path.exists():
@@ -986,10 +1228,28 @@ def init(
             console.print(error_panel)
             raise typer.Exit(1)
 
+    speclite_dir = project_path / ".speclite"
+    is_update = speclite_dir.is_dir()
+    if is_update:
+        pending_backups = _find_pending_default_backups(speclite_dir / "templates")
+        if pending_backups:
+            body = _render_pending_template_merges_error(pending_backups, project_root=project_path)
+            console.print()
+            console.print(
+                Panel(
+                    body,
+                    title="[red]Pending Template Merges[/red]",
+                    border_style="red",
+                    padding=(1, 2),
+                )
+            )
+            raise typer.Exit(1)
+
     current_dir = Path.cwd()
 
+    setup_title = "Updating SpecLite" if is_update else "Installing SpecLite"
     setup_lines = [
-        "[cyan]SpecLite Project Setup[/cyan]",
+        f"[cyan]{setup_title}[/cyan]",
         "",
         f"{'Project':<15} [green]{project_path.name}[/green]",
         f"{'Working Path':<15} [dim]{current_dir}[/dim]",
@@ -1091,11 +1351,21 @@ def init(
 
     # Track git error message outside Live context so it persists
     git_error_message = None
+    template_notices: list[str] = []
 
     with Live(tracker.render(), console=console, refresh_per_second=8, transient=True) as live:
         tracker.attach_refresh(lambda: live.update(tracker.render()))
         try:
-            download_and_extract_template(project_path, selected_agents, selected_script, here, verbose=False, tracker=tracker)
+            download_and_extract_template(
+                project_path,
+                selected_agents,
+                selected_script,
+                is_current_dir=here,
+                is_update=is_update,
+                verbose=False,
+                tracker=tracker,
+                notices=template_notices,
+            )
 
             ensure_executable_scripts(project_path, tracker=tracker)
 
@@ -1135,7 +1405,24 @@ def init(
             pass
 
     console.print(tracker.render())
-    console.print("\n[bold green]Project ready.[/bold green]")
+
+    note_sections: list[str] = []
+    prev_defaults = _find_pending_default_backups(project_path / ".speclite" / "templates")
+    merge_note = _render_template_merge_required_notice(prev_defaults, project_root=project_path)
+    if merge_note:
+        note_sections.append(merge_note)
+    note_sections.extend(template_notices)
+
+    if note_sections:
+        console.print()
+        console.print(
+            Panel(
+                "\n\n".join(note_sections),
+                title="[yellow]Template Merge Required[/yellow]",
+                border_style="yellow",
+                padding=(1, 2),
+            )
+        )
     
     # Show git error details if initialization failed
     if git_error_message:
@@ -1154,74 +1441,57 @@ def init(
         )
         console.print(git_error_panel)
 
-    # Agent folder security notice
-    if selected_agents:
-        folder_lines = ["Agent folders:"]
-        for agent in selected_agents:
-            agent_config = AGENT_CONFIG.get(agent)
-            if agent_config:
-                folder_lines.append(f"  • {agent_config['name']}: [cyan]{agent_config['folder']}[/cyan]")
-        security_notice = Panel(
-            "Some agents may store credentials, auth tokens, or other identifying and private artifacts in the agent folder within your project.\n\n"
-            + "\n".join(folder_lines)
-            + "\n\nConsider adding these folders (or parts of them) to [cyan].gitignore[/cyan] to prevent accidental credential leakage.",
-            title="[yellow]Agent Folder Security[/yellow]",
-            border_style="yellow",
-            padding=(1, 2)
-        )
+    if not is_update:
+        steps_lines = []
+        if not here:
+            steps_lines.append(f"1. Go to the project folder: [cyan]cd {project_name}[/cyan]")
+            step_num = 2
+        else:
+            steps_lines.append("1. You're already in the project directory!")
+            step_num = 2
+
+        # Add Codex-specific setup step if needed
+        if "codex" in selected_agents:
+            codex_path = project_path / ".codex"
+            quoted_path = shlex.quote(str(codex_path))
+            if os.name == "nt":  # Windows
+                cmd = f"setx CODEX_HOME {quoted_path}"
+            else:  # Unix-like systems
+                cmd = f"export CODEX_HOME={quoted_path}"
+            
+            steps_lines.append(f"{step_num}. Set [cyan]CODEX_HOME[/cyan] environment variable before running Codex: [cyan]{cmd}[/cyan]")
+            step_num += 1
+
+        steps_lines.append(f"{step_num}. Start using slash commands with your AI agent:")
+
+        steps_lines.append("   2.1 [cyan]/sl.constitution[/] - Establish project principles")
+        steps_lines.append("   2.2 [cyan]/sl.specify[/] - Create baseline specification")
+        steps_lines.append("   2.3 [cyan]/sl.plan[/] - Create implementation plan")
+        steps_lines.append("   2.4 [cyan]/sl.tasks[/] - Generate actionable tasks")
+        steps_lines.append("   2.5 [cyan]/sl.implement[/] - Execute implementation")
+
+        steps_panel = Panel("\n".join(steps_lines), title="Next Steps", border_style="cyan", padding=(1,2))
         console.print()
-        console.print(security_notice)
+        console.print(steps_panel)
 
-    steps_lines = []
-    if not here:
-        steps_lines.append(f"1. Go to the project folder: [cyan]cd {project_name}[/cyan]")
-        step_num = 2
-    else:
-        steps_lines.append("1. You're already in the project directory!")
-        step_num = 2
-
-    # Add Codex-specific setup step if needed
-    if "codex" in selected_agents:
-        codex_path = project_path / ".codex"
-        quoted_path = shlex.quote(str(codex_path))
-        if os.name == "nt":  # Windows
-            cmd = f"setx CODEX_HOME {quoted_path}"
-        else:  # Unix-like systems
-            cmd = f"export CODEX_HOME={quoted_path}"
-        
-        steps_lines.append(f"{step_num}. Set [cyan]CODEX_HOME[/cyan] environment variable before running Codex: [cyan]{cmd}[/cyan]")
-        step_num += 1
-
-    steps_lines.append(f"{step_num}. Start using slash commands with your AI agent:")
-
-    steps_lines.append("   2.1 [cyan]/sl.constitution[/] - Establish project principles")
-    steps_lines.append("   2.2 [cyan]/sl.specify[/] - Create baseline specification")
-    steps_lines.append("   2.3 [cyan]/sl.plan[/] - Create implementation plan")
-    steps_lines.append("   2.4 [cyan]/sl.tasks[/] - Generate actionable tasks")
-    steps_lines.append("   2.5 [cyan]/sl.implement[/] - Execute implementation")
-
-    steps_panel = Panel("\n".join(steps_lines), title="Next Steps", border_style="cyan", padding=(1,2))
-    console.print()
-    console.print(steps_panel)
-
-    enhancement_lines = [
-        "Optional commands that you can use for your specs [bright_black](improve quality & confidence)[/bright_black]",
-        "",
-        f"○ [cyan]/sl.clarify[/] [bright_black](optional)[/bright_black] - Ask structured questions to de-risk ambiguous areas before planning (run before [cyan]/sl.plan[/] if used)",
-        f"○ [cyan]/sl.analyze[/] [bright_black](optional)[/bright_black] - Cross-artifact consistency & alignment report (after [cyan]/sl.tasks[/], before [cyan]/sl.implement[/])",
-        f"○ [cyan]/sl.checklist[/] [bright_black](optional)[/bright_black] - Generate quality checklists to validate requirements completeness, clarity, and consistency (after [cyan]/sl.plan[/])"
-    ]
-    enhancements_panel = Panel("\n".join(enhancement_lines), title="Enhancement Commands", border_style="cyan", padding=(1,2))
-    console.print()
-    console.print(enhancements_panel)
+    if not is_update:
+        enhancement_lines = [
+            "Optional commands that you can use for your specs [bright_black](improve quality & confidence)[/bright_black]",
+            "",
+            f"○ [cyan]/sl.clarify[/] [bright_black](optional)[/bright_black] - Ask structured questions to de-risk ambiguous areas before planning (run before [cyan]/sl.plan[/] if used)",
+            f"○ [cyan]/sl.analyze[/] [bright_black](optional)[/bright_black] - Cross-artifact consistency & alignment report (after [cyan]/sl.tasks[/], before [cyan]/sl.implement[/])",
+            f"○ [cyan]/sl.checklist[/] [bright_black](optional)[/bright_black] - Generate quality checklists to validate requirements completeness, clarity, and consistency (after [cyan]/sl.plan[/])"
+        ]
+        enhancements_panel = Panel("\n".join(enhancement_lines), title="Enhancement Commands", border_style="cyan", padding=(1,2))
+        console.print()
+        console.print(enhancements_panel)
 
 @app.command()
 def check():
-    """Check that all required tools are installed."""
+    """Check tool availability and template customization status."""
     show_banner()
-    console.print("[bold]Checking for installed tools...[/bold]\n")
-
-    tracker = StepTracker("Check Available Tools")
+    
+    tracker = StepTracker("Available Tools Check")
 
     tracker.add("git", "Git version control")
     git_ok = check_tool("git", tracker=tracker)
@@ -1249,13 +1519,50 @@ def check():
 
     console.print(tracker.render())
 
-    console.print("\n[bold green]SpecLite CLI is ready to use![/bold green]")
-
     if not git_ok:
         console.print("[dim]Tip: Install git for repository management[/dim]")
 
     if not any(agent_results.values()):
         console.print("[dim]Tip: Install an AI assistant for the best experience[/dim]")
+
+    # Report customized templates (live `.md` differs from `.default.md`).
+    cwd = Path.cwd()
+    templates_root = cwd / ".speclite" / "templates"
+    overridden: list[Path] = []
+    if templates_root.is_dir():
+        for default_path in sorted(templates_root.rglob("*.default.md")):
+            name = default_path.name
+            if not name.endswith(".default.md"):
+                continue
+            live_path = default_path.with_name(name[: -len(".default.md")] + ".md")
+            if not live_path.is_file():
+                continue
+            try:
+                if live_path.read_bytes() != default_path.read_bytes():
+                    overridden.append(live_path)
+            except Exception:
+                # Ignore unreadable files (permissions, transient filesystem errors, etc.)
+                continue
+
+    console.print()
+    if overridden:
+        overrides_tree = Tree(f"[cyan]Customized Templates ({len(overridden)})[/cyan]", guide_style="grey50")
+        overrides_tree.add("[bright_black]Diff .md vs .default.md to review changes.[/bright_black]")
+        for path in overridden:
+            try:
+                rel = path.relative_to(cwd).as_posix()
+            except ValueError:
+                rel = path.as_posix()
+            overrides_tree.add(f"[yellow]●[/yellow] [white]{path.name}[/white] [bright_black]({rel})[/bright_black]")
+        console.print(overrides_tree)
+    else:
+        detail = (
+            "None (all templates match defaults)"
+            if templates_root.is_dir()
+            else "None (no .speclite/templates directory found)"
+        )
+        console.print("[cyan]Customized Templates (0)[/cyan]")
+        console.print(f"[bright_black]{detail}[/bright_black]")
 
 @app.command()
 def version():

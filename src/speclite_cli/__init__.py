@@ -97,6 +97,41 @@ BANNER = """
 """
 
 TAGLINE = "SpecLite - Spec-Driven Development Toolkit"
+
+SLASH_COMMAND_DESCRIPTIONS: dict[str, str] = {
+    "constitution": "Establish project principles",
+    "specify": "Create baseline specification",
+    "plan": "Create implementation plan",
+    "tasks": "Generate actionable tasks",
+    "implement": "Execute implementation",
+    "clarify": "Ask structured questions to de-risk ambiguous areas before planning (run before [cyan]/sl.plan[/] if used)",
+    "analyze": "Cross-artifact consistency & alignment report (after [cyan]/sl.tasks[/], before [cyan]/sl.implement[/])",
+    "checklist": "Generate quality checklists to validate requirements completeness, clarity, and consistency (after [cyan]/sl.plan[/])",
+    "review": "Review the implementation for the current feature (after [cyan]/sl.implement[/], ideally with a different AI agent)",
+    "taskstoissues": "Convert existing tasks into actionable, dependency-ordered GitHub issues for the feature",
+}
+
+SLASH_COMMANDS_NEXT_STEPS = ["constitution", "specify", "plan", "tasks", "implement"]
+SLASH_COMMANDS_OPTIONAL = ["clarify", "analyze", "checklist", "review", "taskstoissues"]
+
+def _format_slash_command(command: str) -> str:
+    return f"[cyan]/sl.{command}[/]"
+
+def _format_slash_command_optional_line(command: str) -> str:
+    return f"○ {_format_slash_command(command)} [bright_black](optional)[/bright_black] - {SLASH_COMMAND_DESCRIPTIONS[command]}"
+
+def _print_slash_commands_help() -> None:
+    console.print()
+    console.print("[bold]Slash Commands[/bold] (run these in your AI agent):")
+    console.print("[dim]Generated into your agent folder by running [cyan]speclite init[/cyan].[/dim]")
+    console.print()
+    console.print("[bold]Core[/bold]")
+    for command in SLASH_COMMANDS_NEXT_STEPS:
+        console.print(f"  {_format_slash_command(command)} - {SLASH_COMMAND_DESCRIPTIONS[command]}")
+    console.print()
+    console.print("[bold]Optional[/bold]")
+    for command in SLASH_COMMANDS_OPTIONAL:
+        console.print(f"  {_format_slash_command(command)} - {SLASH_COMMAND_DESCRIPTIONS[command]}")
 class StepTracker:
     """Track and render hierarchical steps without emojis, similar to Claude Code tree output.
     Supports live auto-refresh via an attached refresh callback.
@@ -380,6 +415,7 @@ class BannerGroup(TyperGroup):
         # Show banner before help
         show_banner()
         super().format_help(ctx, formatter)
+        _print_slash_commands_help()
 
 
 app = typer.Typer(
@@ -729,18 +765,17 @@ def _defaulted_path_for_live(path: Path) -> Path:
         >>> 'plan-template.md' -> 'plan-template.default.md'
     """
     # Example: `plan-template.md` -> `plan-template.default.md`
-    suffixes = path.suffixes
-    suffix = _full_suffix(path)
-    stem = _stem_without_full_suffix(path)
-    if suffixes and suffixes[0] == ".default":
+    if path.suffixes and path.suffixes[0] == ".default":
         return path
+    suffix = _full_suffix(path)
+    stem = path.name[:-len(suffix)] if suffix else path.name
     return path.with_name(f"{stem}.default{suffix}")
 
 def _prev_default_path(default_path: Path) -> Path:
     """Return the backup path for a `.default` template.
 
     Example:
-        >>> 'plan-template.default.md'  # 'plan-template.default.prev.md'
+        >>> 'plan-template.default.md' -> 'plan-template.default.prev.md'
     """
     return default_path.with_name(f"{default_path.stem}.prev{default_path.suffix}")
 
@@ -926,6 +961,11 @@ def _stage_templates(templates_dir: Path, dest_dir: Path) -> None:
         rel_path = path.relative_to(templates_dir)
         if rel_path.name == "vscode-settings.json":
             continue
+        if ".default" in path.suffixes:
+            raise ValueError(
+                "Bundled templates must not include `.default` variants; "
+                f"found: {rel_path}"
+            )
         out_path = dest_dir / rel_path
         out_path.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(path, out_path)
@@ -1464,23 +1504,19 @@ def init(
 
         steps_lines.append(f"{step_num}. Start using slash commands with your AI agent:")
 
-        steps_lines.append("   2.1 [cyan]/sl.constitution[/] - Establish project principles")
-        steps_lines.append("   2.2 [cyan]/sl.specify[/] - Create baseline specification")
-        steps_lines.append("   2.3 [cyan]/sl.plan[/] - Create implementation plan")
-        steps_lines.append("   2.4 [cyan]/sl.tasks[/] - Generate actionable tasks")
-        steps_lines.append("   2.5 [cyan]/sl.implement[/] - Execute implementation")
+        for idx, command in enumerate(SLASH_COMMANDS_NEXT_STEPS, start=1):
+            steps_lines.append(f"   {step_num}.{idx} {_format_slash_command(command)} - {SLASH_COMMAND_DESCRIPTIONS[command]}")
 
         steps_panel = Panel("\n".join(steps_lines), title="Next Steps", border_style="cyan", padding=(1,2))
         console.print()
         console.print(steps_panel)
 
-    if not is_update:
         enhancement_lines = [
             "Optional commands that you can use for your specs [bright_black](improve quality & confidence)[/bright_black]",
             "",
-            f"○ [cyan]/sl.clarify[/] [bright_black](optional)[/bright_black] - Ask structured questions to de-risk ambiguous areas before planning (run before [cyan]/sl.plan[/] if used)",
-            f"○ [cyan]/sl.analyze[/] [bright_black](optional)[/bright_black] - Cross-artifact consistency & alignment report (after [cyan]/sl.tasks[/], before [cyan]/sl.implement[/])",
-            f"○ [cyan]/sl.checklist[/] [bright_black](optional)[/bright_black] - Generate quality checklists to validate requirements completeness, clarity, and consistency (after [cyan]/sl.plan[/])"
+            _format_slash_command_optional_line("clarify"),
+            _format_slash_command_optional_line("analyze"),
+            _format_slash_command_optional_line("checklist"),
         ]
         enhancements_panel = Panel("\n".join(enhancement_lines), title="Enhancement Commands", border_style="cyan", padding=(1,2))
         console.print()

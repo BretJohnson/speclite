@@ -1,5 +1,5 @@
 ---
-description: Review the implementation for the current feature.
+description: Review the implementation for the current feature (ideally with a different AI agent).
 scripts:
   sh: .speclite/scripts/check-prerequisites.sh --json
   ps: .speclite/scripts/check-prerequisites.ps1 -Json

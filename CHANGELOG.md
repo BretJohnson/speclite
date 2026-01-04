@@ -5,6 +5,21 @@ All notable changes to the SpecLite CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.8] - 2026-01-04
+
+### Changed
+
+- Combine duplicate `is_update` checks when printing the “Next Steps” and “Enhancement Commands” panels.
+- Show a “Slash Commands” section in `speclite --help`, sharing the same command descriptions used by `speclite init` (and formatting for readability).
+- Clarify that `/sl.review` is ideally run using a different AI agent than the implementer.
+
+## [0.0.7] - 2026-01-04
+
+### Fixed
+
+- Error if bundled templates include any `*.default*` templates during staging so the live/default sync logic stays authoritative.
+- Clean up small docstring/example and implementation nits in the template default path helpers.
+
 ## [0.0.6] - 2026-01-04
 
 ### Added

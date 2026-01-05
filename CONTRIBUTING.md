@@ -64,11 +64,11 @@ When working on SpecLite:
 
 ### Testing template and command changes locally
 
-1. Run the CLI with `uvx` pointing to your local repo directory. Use `init` to update your test project with the latest scripts and templates:
+1. Run the CLI with `uvx` pointing to your local repo directory. Use `install` to update your test project with the latest scripts and templates:
 
    ```bash
    cd <my-test-project>
-   uvx --refresh --from ~/src/speclite speclite init .
+   uvx --refresh --from ~/src/speclite speclite install
    ```
 
    `--refresh` ignores what's in the `uvx` cache. It's sometimes needed to get the latest changes.

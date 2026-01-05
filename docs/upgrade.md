@@ -9,7 +9,7 @@
 | What to Upgrade | Command | When to Use |
 |----------------|---------|-------------|
 | **CLI Tool Only** | `uv tool install speclite-cli --force --from git+https://github.com/BretJohnson/speclite.git` | Get latest CLI features without touching project files |
-| **Project Files** | `speclite init --here --force --ai <your-agent(s)>` | Update slash commands, templates, and scripts in your project |
+| **Project Files** | `speclite install --ai <your-agent(s)>` | Update slash commands, templates, and scripts in your project |
 | **Both** | Run CLI upgrade, then project update | Recommended for major version updates |
 
 ---
@@ -29,7 +29,7 @@ uv tool install speclite-cli --force --from git+https://github.com/BretJohnson/s
 No upgrade needed—`uvx` always fetches the latest version. Just run your commands as normal:
 
 ```bash
-uvx --from git+https://github.com/BretJohnson/speclite.git speclite init --here --ai copilot
+uvx --from git+https://github.com/BretJohnson/speclite.git speclite install --ai copilot
 ```
 
 ### Verify the upgrade
@@ -48,7 +48,7 @@ When SpecLite releases new features (like new slash commands or updated template
 
 ### What gets updated?
 
-Running `speclite init --here --force` will update:
+Running `speclite install` will update:
 
 - ✅ **Slash command files** (`.claude/commands/`, `.github/prompts/`, etc.)
 - ✅ **Script files** (`.speclite/scripts/`)
@@ -70,7 +70,7 @@ These files are **never touched** by the upgrade—the template packages don't e
 Run this inside your project directory:
 
 ```bash
-speclite init --here --force --ai <your-agent(s)>
+speclite install --ai <your-agent(s)>
 ```
 
 Replace `<your-agent(s)>` with your AI assistant(s), comma-separated. Refer to this list of [Supported AI Agents](../README.md#-supported-ai-agents)
@@ -78,12 +78,10 @@ Replace `<your-agent(s)>` with your AI assistant(s), comma-separated. Refer to t
 **Example:**
 
 ```bash
-speclite init --here --force --ai copilot
+speclite install --ai copilot
 ```
 
-### Understanding the `--force` flag
-
-Older versions prompted for confirmation when running `speclite init --here` in a non-empty directory. Current versions proceed without prompting; `--force` is kept for compatibility.
+`speclite install` is safe to re-run: it refreshes packaged defaults and preserves customized live templates.
 
 ---
 
@@ -105,7 +103,7 @@ rm .speclite/memory/constitution.md
 
 If you customized any templates in `.speclite/templates/`, the upgrade preserves your live copies (`*.md`). The packaged defaults are stored alongside as `*.default.md` and are refreshed during upgrade.
 
-If SpecLite detects that a default changed while you have customizations, it will back up the old default as `*.default.prev.md` and print instructions during `speclite init`.
+If SpecLite detects that a default changed while you have customizations, it will back up the old default as `*.default.prev.md` and print instructions during `speclite install`.
 
 ---
 
@@ -118,7 +116,7 @@ If SpecLite detects that a default changed while you have customizations, it wil
 uv tool install speclite-cli --force --from git+https://github.com/BretJohnson/speclite.git
 
 # Update project files to get new commands
-speclite init --here --force --ai copilot
+speclite install --ai copilot
 ```
 
 Your constitution is preserved automatically.
@@ -130,53 +128,12 @@ Your constitution is preserved automatically.
 uv tool install speclite-cli --force --from git+https://github.com/BretJohnson/speclite.git
 
 # 2. Update project
-speclite init --here --force --ai copilot
+speclite install --ai copilot
 ```
-
-### Scenario 3: "I'm working on a project without Git"
-
-If you initialized your project with `--no-git`, you can still upgrade:
-
-```bash
-# Run upgrade
-speclite init --here --force --ai copilot --no-git
-```
-
-The `--no-git` flag skips git initialization but doesn't affect file updates.
-
----
-
-## Using `--no-git` Flag
-
-The `--no-git` flag tells SpecLite to **skip git repository initialization**. This is useful when:
-
-- You manage version control differently (Mercurial, SVN, etc.)
-- Your project is part of a larger monorepo with existing git setup
-- You're experimenting and don't want version control yet
-
-**During initial setup:**
-
-```bash
-speclite init my-project --ai copilot --no-git
-```
-
-**During upgrade:**
-
-```bash
-speclite init --here --force --ai copilot --no-git
-```
-
-### What `--no-git` does NOT do
-
-❌ Does NOT prevent file updates
-❌ Does NOT skip slash command installation
-❌ Does NOT affect template merging
-
-It **only** skips running `git init` and creating the initial commit.
 
 ### Working without Git
 
-If you use `--no-git`, you'll need to manage feature directories manually:
+If your project isn't using Git branches, you'll need to manage feature directories manually:
 
 **Set the `SPECLITE_FEATURE` environment variable** before using planning commands:
 
@@ -254,17 +211,17 @@ uv tool install speclite-cli --from git+https://github.com/BretJohnson/speclite.
 
 ### "Do I need to run speclite every time I open my project?"
 
-**Short answer:** No, you only run `speclite init` once per project (or when upgrading).
+**Short answer:** No, you only run `speclite install` once per project (or when upgrading).
 
 **Explanation:**
 
 The `speclite` CLI tool is used for:
 
-- **Initial setup:** `speclite init` to bootstrap SpecLite in your project
-- **Upgrades:** `speclite init --here --force` to update templates and commands
+- **Initial setup:** `speclite install` to bootstrap SpecLite in your project
+- **Upgrades:** `speclite install` to update templates and commands
 - **Diagnostics:** `speclite check` to verify tool installation
 
-Once you've run `speclite init`, the slash commands (like `/sl.specify`, `/sl.plan`, etc.) are **permanently installed** in your project's agent folder (`.claude/`, `.github/prompts/`, etc.). Your AI assistant reads these command files directly—no need to run `speclite` again.
+Once you've run `speclite install`, the slash commands (like `/sl.specify`, `/sl.plan`, etc.) are **permanently installed** in your project's agent folder (`.claude/`, `.github/prompts/`, etc.). Your AI assistant reads these command files directly—no need to run `speclite` again.
 
 **If your agent isn't recognizing slash commands:**
 
@@ -280,7 +237,7 @@ Once you've run `speclite init`, the slash commands (like `/sl.specify`, `/sl.pl
 
 2. **Restart your IDE/editor completely** (not just reload window)
 
-3. **Check you're in the correct directory** where you ran `speclite init`
+3. **Check you're in the correct directory** where you ran `speclite install`
 
 4. **For some agents**, you may need to reload the workspace or clear cache
 

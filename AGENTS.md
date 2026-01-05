@@ -75,7 +75,7 @@ This eliminates the need for special-case mappings throughout the codebase.
 
 #### 2. Update CLI Help Text
 
-Update the `--ai` parameter help text in the `init()` command to include the new agent:
+Update the `--ai` parameter help text in the `install()` command to include the new agent:
 
 ```python
 ai_assistant: str = typer.Option(None, "--ai", help="AI assistant to use: claude, gemini, copilot, cursor-agent, codex, or new-agent-cli"),
@@ -176,7 +176,7 @@ elif selected_ai == "new-agent":
         agent_tool_missing = True
 ```
 
-**Note**: CLI tool checks are now handled automatically based on the `requires_cli` field in AGENT_CONFIG. No additional code changes needed in the `check()` or `init()` commands - they automatically loop through AGENT_CONFIG and check tools as needed.
+**Note**: CLI tool checks are now handled automatically based on the `requires_cli` field in AGENT_CONFIG. No additional code changes needed in the `check()` or `install()` commands - they automatically loop through AGENT_CONFIG and check tools as needed.
 
 ## Important Design Decisions
 
@@ -348,7 +348,7 @@ Different agents use different argument placeholders:
 ## Testing New Agent Integration
 
 1. **Build test**: Run package creation script locally
-2. **CLI test**: Test `speclite init --ai <agent>` command
+2. **CLI test**: Test `speclite install --ai <agent>` command
 3. **File generation**: Verify correct directory structure and files
 4. **Command validation**: Ensure generated commands work with the agent
 5. **Context update**: Test agent context update scripts

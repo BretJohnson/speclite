@@ -104,7 +104,7 @@ function Validate-Environment {
     }
     if (-not (Test-Path $TEMPLATE_FILE)) {
         Write-Err "Template file not found at $TEMPLATE_FILE"
-        Write-Info 'Run speclite init to scaffold .speclite/templates, or add agent-file-template.md there.'
+        Write-Info 'Run speclite install to scaffold .speclite/templates, or add agent-file-template.md there.'
         exit 1
     }
 }
@@ -412,4 +412,3 @@ function Main {
 }
 
 Main
-

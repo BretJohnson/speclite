@@ -10,7 +10,7 @@
 
 <p align="center">
     <a href="https://github.com/BretJohnson/speclite/actions/workflows/ci.yml"><img src="https://github.com/BretJohnson/speclite/actions/workflows/ci.yml/badge.svg" alt="CI"/></a>
-    <a href="./CHANGELOG.md"><img src="https://img.shields.io/badge/version-0.0.5-blue" alt="Version"/></a>
+    <a href="./CHANGELOG.md"><img src="https://img.shields.io/badge/version-0.0.9-blue" alt="Version"/></a>
     <a href="https://github.com/BretJohnson/speclite/stargazers"><img src="https://img.shields.io/github/stars/BretJohnson/speclite?style=social" alt="GitHub stars"/></a>
     <a href="https://github.com/BretJohnson/speclite/blob/main/LICENSE"><img src="https://img.shields.io/github/license/BretJohnson/speclite" alt="License"/></a>
 </p>
@@ -54,13 +54,8 @@ uv tool install speclite-cli --from git+https://github.com/BretJohnson/speclite.
 Then use the tool directly:
 
 ```bash
-# Create new project
-speclite init <PROJECT_NAME>
-
-# Or initialize in existing project
-speclite init . --ai claude,codex
-# or
-speclite init --here --ai claude,codex
+# Install/update SpecLite in your current project
+speclite install --ai claude,codex
 
 # Check installed tools
 speclite check
@@ -77,7 +72,7 @@ uv tool install speclite-cli --force --from git+https://github.com/BretJohnson/s
 Run directly without installing:
 
 ```bash
-uvx --from git+https://github.com/BretJohnson/speclite.git speclite init <PROJECT_NAME>
+uvx --from git+https://github.com/BretJohnson/speclite.git speclite install --ai claude,codex
 ```
 
 **Benefits of persistent installation:**
@@ -149,56 +144,41 @@ The `speclite` command supports the following options:
 
 | Command | Description                                                                                         |
 | ------- | --------------------------------------------------------------------------------------------------- |
-| `init`  | Initialize a new SpecLite project from the latest template                                          |
+| `install`  | Install or update SpecLite in the current project                                                 |
 | `check` | Check for installed tools (`git`, `claude`, `gemini`, `code`/`code-insiders`, `cursor-agent`, `codex`) |
 
-### `speclite init` Arguments & Options
+> Note: `speclite init` is kept as a deprecated alias for compatibility with GitHub SpecKit.
+
+### `speclite install` Arguments & Options
 
 | Argument/Option        | Type     | Description                                                                                        |
 | ---------------------- | -------- | -------------------------------------------------------------------------------------------------- |
-| `<project-name>`       | Argument | Name for your new project directory (optional if using `--here`, or use `.` for current directory) |
 | `--ai`                 | Option   | AI assistant(s) to use (comma-separated): `claude`, `gemini`, `copilot`, `cursor-agent`, or `codex` |
 | `--script`             | Option   | Script variant to use: `sh` (bash/zsh) or `ps` (PowerShell)                                        |
 | `--ignore-agent-tools` | Flag     | Skip checks for AI agent tools like Claude Code                                                    |
-| `--no-git`             | Flag     | Skip git repository initialization                                                                 |
-| `--here`               | Flag     | Initialize project in the current directory instead of creating a new one                          |
-| `--force`              | Flag     | Force merge/overwrite when initializing in current directory (skip confirmation)                   |
 | `--debug`              | Flag     | Enable detailed debug output for troubleshooting                                                   |
 
 ### Examples
 
 ```bash
-# Basic project initialization
-speclite init my-project
+# Basic installation (interactive AI selection)
+speclite install
 
-# Initialize with specific AI assistant(s)
-speclite init my-project --ai claude
-speclite init my-project --ai claude,codex
+# Install with specific AI assistant(s)
+speclite install --ai claude
+speclite install --ai claude,codex
 
-# Initialize with Cursor support
-speclite init my-project --ai cursor-agent
+# Install with Cursor support
+speclite install --ai cursor-agent
 
-# Initialize with Codex support
-speclite init my-project --ai codex
+# Install with Codex support
+speclite install --ai codex
 
-# Initialize with PowerShell scripts (Windows/cross-platform)
-speclite init my-project --ai copilot --script ps
-
-# Initialize in current directory
-speclite init . --ai copilot
-# or use the --here flag
-speclite init --here --ai copilot
-
-# Force merge into current (non-empty) directory without confirmation
-speclite init . --force --ai copilot
-# or
-speclite init --here --force --ai copilot
-
-# Skip git initialization
-speclite init my-project --ai gemini --no-git
+# Install with PowerShell scripts (Windows/cross-platform)
+speclite install --ai copilot --script ps
 
 # Enable debug output for troubleshooting
-speclite init my-project --ai claude --debug
+speclite install --ai claude --debug
 
 # Check system requirements
 speclite check
@@ -206,7 +186,7 @@ speclite check
 
 ### Available Slash Commands
 
-After running `speclite init`, your AI coding agent will have access to these slash commands for structured development:
+After running `speclite install`, your AI coding agent will have access to these slash commands for structured development:
 
 #### Core Commands
 
@@ -281,51 +261,25 @@ This README is the primary documentation entry point. The links below take you t
 <details>
 <summary>Click to expand the detailed step-by-step walkthrough</summary>
 
-You can use the SpecLite CLI to bootstrap your project, which will bring in the required artifacts in your environment. Run:
+You can use the SpecLite CLI to install or update SpecLite in an existing project. Run from inside your project directory:
 
 ```bash
-speclite init <project_name>
-```
-
-Or initialize in the current directory:
-
-```bash
-speclite init .
-# or use the --here flag
-speclite init --here
-# Skip confirmation when the directory already has files
-speclite init . --force
-# or
-speclite init --here --force
+speclite install
 ```
 
 You will be prompted to select the AI agent(s) you are using. You can also proactively specify them directly in the terminal (comma-separated):
 
 ```bash
-speclite init <project_name> --ai claude
-speclite init <project_name> --ai gemini
-speclite init <project_name> --ai copilot
-speclite init <project_name> --ai claude,codex
-
-# Or in current directory:
-speclite init . --ai claude
-speclite init . --ai codex
-
-# or use --here flag
-speclite init --here --ai claude
-speclite init --here --ai codex
-
-# Force merge into a non-empty current directory
-speclite init . --force --ai claude
-
-# or
-speclite init --here --force --ai claude
+speclite install --ai claude
+speclite install --ai gemini
+speclite install --ai copilot
+speclite install --ai claude,codex
 ```
 
 The CLI will check if you have the required CLIs for your selected agents (Claude Code, Gemini CLI, Cursor CLI, or Codex CLI). If you do not, or you prefer to get the templates without checking for the right tools, use `--ignore-agent-tools` with your command:
 
 ```bash
-speclite init <project_name> --ai claude --ignore-agent-tools
+speclite install --ai claude --ignore-agent-tools
 ```
 
 ### **STEP 1:** Establish project principles

@@ -5,6 +5,17 @@ All notable changes to the SpecLite CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.9] - 2026-01-04
+
+### Changed
+
+- Rename `speclite init` to `speclite install`; `init` remains as a deprecated alias for compatibility with GitHub SpecKit.
+- `speclite install` now always installs/updates SpecLite in the current project (no new project directory creation).
+
+### Fixed
+
+- Show option descriptions in `speclite init --help` so the deprecated alias matches `speclite install`.
+
 ## [0.0.8] - 2026-01-04
 
 ### Changed

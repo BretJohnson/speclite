@@ -10,33 +10,23 @@
 
 ## Installation
 
-### Initialize a New Project
+### Install SpecLite in a Project
 
-The easiest way to get started is to initialize a new project:
+Run from inside an existing project directory:
 
 ```bash
-uvx --from git+https://github.com/BretJohnson/speclite.git speclite init <PROJECT_NAME>
+uvx --from git+https://github.com/BretJohnson/speclite.git speclite install
 ```
 
-Or initialize in the current directory:
+Or proactively specify your AI agent(s) during installation (comma-separated):
 
 ```bash
-uvx --from git+https://github.com/BretJohnson/speclite.git speclite init .
-# or use the --here flag
-uvx --from git+https://github.com/BretJohnson/speclite.git speclite init --here
-```
-
-### Select AI Agent(s)
-
-You can proactively specify your AI agent(s) during initialization (comma-separated):
-
-```bash
-uvx --from git+https://github.com/BretJohnson/speclite.git speclite init <project_name> --ai claude
-uvx --from git+https://github.com/BretJohnson/speclite.git speclite init <project_name> --ai gemini
-uvx --from git+https://github.com/BretJohnson/speclite.git speclite init <project_name> --ai copilot
-uvx --from git+https://github.com/BretJohnson/speclite.git speclite init <project_name> --ai cursor-agent
-uvx --from git+https://github.com/BretJohnson/speclite.git speclite init <project_name> --ai codex
-uvx --from git+https://github.com/BretJohnson/speclite.git speclite init <project_name> --ai claude,codex
+uvx --from git+https://github.com/BretJohnson/speclite.git speclite install --ai claude
+uvx --from git+https://github.com/BretJohnson/speclite.git speclite install --ai gemini
+uvx --from git+https://github.com/BretJohnson/speclite.git speclite install --ai copilot
+uvx --from git+https://github.com/BretJohnson/speclite.git speclite install --ai cursor-agent
+uvx --from git+https://github.com/BretJohnson/speclite.git speclite install --ai codex
+uvx --from git+https://github.com/BretJohnson/speclite.git speclite install --ai claude,codex
 ```
 
 ### Specify Script Type (Shell vs PowerShell)
@@ -52,8 +42,8 @@ Auto behavior:
 Force a specific script type:
 
 ```bash
-uvx --from git+https://github.com/BretJohnson/speclite.git speclite init <project_name> --script sh
-uvx --from git+https://github.com/BretJohnson/speclite.git speclite init <project_name> --script ps
+uvx --from git+https://github.com/BretJohnson/speclite.git speclite install --script sh
+uvx --from git+https://github.com/BretJohnson/speclite.git speclite install --script ps
 ```
 
 ### Ignore Agent Tools Check
@@ -61,7 +51,7 @@ uvx --from git+https://github.com/BretJohnson/speclite.git speclite init <projec
 If you prefer to get the templates without checking for the right tools:
 
 ```bash
-uvx --from git+https://github.com/BretJohnson/speclite.git speclite init <project_name> --ai claude --ignore-agent-tools
+uvx --from git+https://github.com/BretJohnson/speclite.git speclite install --ai claude --ignore-agent-tools
 ```
 
 ## Verification

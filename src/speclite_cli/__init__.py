@@ -12,15 +12,16 @@
 SpecLite CLI - Setup tool for SpecLite projects
 
 Usage:
-    uvx speclite-cli.py init <project-name>
-    uvx speclite-cli.py init .
-    uvx speclite-cli.py init --here
+    uvx speclite-cli.py install
+    uvx speclite-cli.py install --ai claude,codex
 
 Or install globally:
     uv tool install --from speclite-cli.py speclite-cli
-    speclite init <project-name>
-    speclite init .
-    speclite init --here
+    speclite install
+    speclite install --ai claude,codex
+
+Deprecated (compatibility with GitHub SpecKit):
+    speclite init
 """
 
 import os
@@ -33,7 +34,7 @@ import json
 import re
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Optional
 
 import typer
 from importlib import resources
@@ -123,7 +124,7 @@ def _format_slash_command_optional_line(command: str) -> str:
 def _print_slash_commands_help() -> None:
     console.print()
     console.print("[bold]Slash Commands[/bold] (run these in your AI agent):")
-    console.print("[dim]Generated into your agent folder by running [cyan]speclite init[/cyan].[/dim]")
+    console.print("[dim]Generated into your agent folder by running [cyan]speclite install[/cyan].[/dim]")
     console.print()
     console.print("[bold]Core[/bold]")
     for command in SLASH_COMMANDS_NEXT_STEPS:
@@ -420,7 +421,7 @@ class BannerGroup(TyperGroup):
 
 app = typer.Typer(
     name="speclite",
-    help="Setup tool for SpecLite spec-driven development projects",
+    help="Install or update SpecLite in an existing project",
     add_completion=False,
     invoke_without_command=True,
     cls=BannerGroup,
@@ -496,61 +497,6 @@ def check_tool(tool: str, tracker: StepTracker = None) -> bool:
             tracker.error(tool, "not found")
     
     return found
-
-def is_git_repo(path: Path = None) -> bool:
-    """Check if the specified path is inside a git repository."""
-    if path is None:
-        path = Path.cwd()
-    
-    if not path.is_dir():
-        return False
-
-    try:
-        # Use git command to check if inside a work tree
-        subprocess.run(
-            ["git", "rev-parse", "--is-inside-work-tree"],
-            check=True,
-            capture_output=True,
-            cwd=path,
-        )
-        return True
-    except (subprocess.CalledProcessError, FileNotFoundError):
-        return False
-
-def init_git_repo(project_path: Path, quiet: bool = False) -> Tuple[bool, Optional[str]]:
-    """Initialize a git repository in the specified path.
-    
-    Args:
-        project_path: Path to initialize git repository in
-        quiet: if True suppress console output (tracker handles status)
-    
-    Returns:
-        Tuple of (success: bool, error_message: Optional[str])
-    """
-    try:
-        original_cwd = Path.cwd()
-        os.chdir(project_path)
-        if not quiet:
-            console.print("[cyan]Initializing git repository...[/cyan]")
-        subprocess.run(["git", "init"], check=True, capture_output=True, text=True)
-        subprocess.run(["git", "add", "."], check=True, capture_output=True, text=True)
-        subprocess.run(["git", "commit", "-m", "Initial commit from SpecLite template"], check=True, capture_output=True, text=True)
-        if not quiet:
-            console.print("[green]✓[/green] Git repository initialized")
-        return True, None
-
-    except subprocess.CalledProcessError as e:
-        error_msg = f"Command: {' '.join(e.cmd)}\nExit code: {e.returncode}"
-        if e.stderr:
-            error_msg += f"\nError: {e.stderr.strip()}"
-        elif e.stdout:
-            error_msg += f"\nOutput: {e.stdout.strip()}"
-        
-        if not quiet:
-            console.print(f"[red]Error initializing git repository:[/red] {e}")
-        return False, error_msg
-    finally:
-        os.chdir(original_cwd)
 
 def handle_vscode_settings(sub_item, dest_file, rel_path, verbose=False, tracker=None) -> None:
     """Handle merging or copying of .vscode/settings.json files."""
@@ -881,11 +827,11 @@ def _render_pending_template_merges_error(prev_default_paths: list[Path], *, pro
 
     return "\n".join(
         [
-            "[red]You still have unresolved template merges from a previous SpecLite update. You must resolve them first before installing again.[/red]",
+            "[red]You still have unresolved template merges from a previous SpecLite install. You must resolve them first before installing again.[/red]",
             "",
             "\n".join(lines),
             "",
-            "After resolving and deleting the previous default file(s), re-run speclite init.",
+            "After resolving and deleting the previous default file(s), re-run speclite install.",
         ]
     )
 
@@ -946,7 +892,7 @@ def _sync_defaulted_file(
         )
     default_path.rename(backup_path)
     _write_bytes(default_path, new_default_content)
-    # Merge guidance is rendered once at the end of `speclite init` by scanning for `*.default.prev.md` files.
+    # Merge guidance is rendered once at the end of `speclite install` by scanning for `*.default.prev.md` files.
 
 def _stage_templates(templates_dir: Path, dest_dir: Path) -> None:
     """Stage bundled templates into dest_dir (no `.default` variants).
@@ -1040,9 +986,9 @@ def download_and_extract_template(
 
             with tempfile.TemporaryDirectory() as temp_dir:
                 # Stage *all* SpecLite files into a temporary directory first, then merge/copy
-                # them into the final destination. This keeps installs consistent between:
-                # - `speclite init <new-dir>` (fresh install), and
-                # - `speclite init --here` (upgrade/merge into an existing repo),
+                # them into the final destination. This keeps behavior consistent for both:
+                # - first-time installs, and
+                # - upgrades into an existing repo,
                 # and avoids partially-updated repos if an error occurs mid-generation.
                 staging_root = Path(temp_dir)
                 spec_dir = staging_root / ".speclite"
@@ -1201,75 +1147,40 @@ def ensure_executable_scripts(project_path: Path, tracker: StepTracker | None = 
             for f in failures:
                 console.print(f"  - {f}")
 
-@app.command()
-def init(
-    project_name: str = typer.Argument(None, help="Name for your new project directory (optional if using --here, or use '.' for current directory)"),
-    ai_assistant: str = typer.Option(None, "--ai", help="AI assistant(s) to use (comma-separated): claude, gemini, copilot, cursor-agent, or codex"),
-    script_type: str = typer.Option(None, "--script", help="Script type to use: sh or ps"),
-    ignore_agent_tools: bool = typer.Option(False, "--ignore-agent-tools", help="Skip checks for AI agent tools like Claude Code"),
-    no_git: bool = typer.Option(False, "--no-git", help="Skip git repository initialization"),
-    here: bool = typer.Option(False, "--here", help="Initialize project in the current directory instead of creating a new one"),
-    force: bool = typer.Option(False, "--force", help="Force merge/overwrite when using --here (skip confirmation)"),
-    debug: bool = typer.Option(False, "--debug", help="Show verbose diagnostic output for initialization failures"),
-):
-    """
-    Initialize a new SpecLite project from the bundled template.
-
-    This command will:
-    1. Check that required tools are installed (git is optional)
-    2. Let you choose your AI assistants
-    3. Load bundled templates and generate agent commands
-    4. Copy template files to a new project directory or current directory
-    5. Initialize a fresh git repository (if not --no-git and no existing repo)
-    6. Optionally set up AI assistant commands
-
-    Examples:
-        speclite init my-project
-        speclite init my-project --ai claude
-        speclite init my-project --ai claude,codex
-        speclite init my-project --ai copilot --no-git
-        speclite init --ignore-agent-tools my-project
-        speclite init . --ai claude         # Initialize in current directory
-        speclite init .                     # Initialize in current directory (interactive AI selection)
-        speclite init --here --ai claude    # Alternative syntax for current directory
-        speclite init --here --ai codex
-        speclite init --here
-        speclite init --here --force  # Skip confirmation when current directory not empty
-    """
-
-    show_banner()
-
-    if project_name == ".":
-        here = True
-        project_name = None  # Clear project_name to use existing validation logic
-
-    if here and project_name:
-        console.print("[red]Error:[/red] Cannot specify both project name and --here flag")
-        raise typer.Exit(1)
-
-    if not here and not project_name:
-        console.print("[red]Error:[/red] Must specify either a project name, use '.' for current directory, or use --here flag")
-        raise typer.Exit(1)
-
-    if here:
-        project_name = Path.cwd().name
-        project_path = Path.cwd()
-    else:
-        project_path = Path(project_name).resolve()
-        if project_path.exists():
-            error_panel = Panel(
-                f"Directory '[cyan]{project_name}[/cyan]' already exists\n"
-                "Please choose a different project name or remove the existing directory.",
-                title="[red]Directory Conflict[/red]",
-                border_style="red",
-                padding=(1, 2)
-            )
-            console.print()
-            console.print(error_panel)
-            raise typer.Exit(1)
+def _install_impl(
+    *,
+    ai_assistant: str | None,
+    script_type: str | None,
+    ignore_agent_tools: bool,
+    force: bool,
+    debug: bool,
+) -> None:
+    project_path = Path.cwd()
 
     speclite_dir = project_path / ".speclite"
-    is_update = speclite_dir.is_dir()
+    git_dir = project_path / ".git"
+
+    if speclite_dir.is_dir():
+        is_update = True
+    elif git_dir.is_dir() or force:
+        is_update = False
+    else:
+        console.print()
+        console.print(
+            Panel(
+                "No [cyan].speclite/[/cyan] or [cyan].git/[/cyan] directory found in the current working directory.\n\n"
+                "SpecLite installs into an existing project. Run from:\n"
+                "- your project root (contains [cyan].git/[/cyan]), or\n"
+                "- a project that already has SpecLite (contains [cyan].speclite/[/cyan]).\n\n"
+                "If you truly want a local install in this directory (without Git), re-run with:\n"
+                "[cyan]speclite install --force[/cyan]",
+                title="[red]Not a Project Directory[/red]",
+                border_style="red",
+                padding=(1, 2),
+            )
+        )
+        raise typer.Exit(1)
+
     if is_update:
         pending_backups = _find_pending_default_backups(speclite_dir / "templates")
         if pending_backups:
@@ -1285,26 +1196,15 @@ def init(
             )
             raise typer.Exit(1)
 
-    current_dir = Path.cwd()
-
     setup_title = "Updating SpecLite" if is_update else "Installing SpecLite"
     setup_lines = [
         f"[cyan]{setup_title}[/cyan]",
         "",
         f"{'Project':<15} [green]{project_path.name}[/green]",
-        f"{'Working Path':<15} [dim]{current_dir}[/dim]",
+        f"{'Path':<15} [dim]{project_path}[/dim]",
     ]
 
-    if not here:
-        setup_lines.append(f"{'Target Path':<15} [dim]{project_path}[/dim]")
-
     console.print(Panel("\n".join(setup_lines), border_style="cyan", padding=(1, 2)))
-
-    should_init_git = False
-    if not no_git:
-        should_init_git = check_tool("git")
-        if not should_init_git:
-            console.print("[yellow]Git not found - will skip repository initialization[/yellow]")
 
     if ai_assistant:
         selected_agents = parse_ai_assistants(ai_assistant)
@@ -1368,7 +1268,7 @@ def init(
     console.print(f"[cyan]Selected AI assistants:[/cyan] {', '.join(selected_agents)}")
     console.print(f"[cyan]Selected script type:[/cyan] {selected_script}")
 
-    tracker = StepTracker("Initialize SpecLite Project")
+    tracker = StepTracker("Install SpecLite")
 
     sys._speclite_tracker_active = True
 
@@ -1384,13 +1284,10 @@ def init(
         ("apply", "Write templates"),
         ("chmod", "Ensure scripts executable"),
         ("cleanup", "Cleanup"),
-        ("git", "Initialize git repository"),
         ("final", "Finalize")
     ]:
         tracker.add(key, label)
 
-    # Track git error message outside Live context so it persists
-    git_error_message = None
     template_notices: list[str] = []
 
     with Live(tracker.render(), console=console, refresh_per_second=8, transient=True) as live:
@@ -1400,7 +1297,7 @@ def init(
                 project_path,
                 selected_agents,
                 selected_script,
-                is_current_dir=here,
+                is_current_dir=True,
                 is_update=is_update,
                 verbose=False,
                 tracker=tracker,
@@ -1409,26 +1306,10 @@ def init(
 
             ensure_executable_scripts(project_path, tracker=tracker)
 
-            if not no_git:
-                tracker.start("git")
-                if is_git_repo(project_path):
-                    tracker.complete("git", "existing repo detected")
-                elif should_init_git:
-                    success, error_msg = init_git_repo(project_path, quiet=True)
-                    if success:
-                        tracker.complete("git", "initialized")
-                    else:
-                        tracker.error("git", "init failed")
-                        git_error_message = error_msg
-                else:
-                    tracker.skip("git", "git not available")
-            else:
-                tracker.skip("git", "--no-git flag")
-
             tracker.complete("final", "project ready")
         except Exception as e:
             tracker.error("final", str(e))
-            console.print(Panel(f"Initialization failed: {e}", title="Failure", border_style="red"))
+            console.print(Panel(f"Install failed: {e}", title="Failure", border_style="red"))
             if debug:
                 _env_pairs = [
                     ("Python", sys.version.split()[0]),
@@ -1438,8 +1319,6 @@ def init(
                 _label_width = max(len(k) for k, _ in _env_pairs)
                 env_lines = [f"{k.ljust(_label_width)} → [bright_black]{v}[/bright_black]" for k, v in _env_pairs]
                 console.print(Panel("\n".join(env_lines), title="Debug Environment", border_style="magenta"))
-            if not here and project_path.exists():
-                shutil.rmtree(project_path)
             raise typer.Exit(1)
         finally:
             pass
@@ -1464,31 +1343,9 @@ def init(
             )
         )
     
-    # Show git error details if initialization failed
-    if git_error_message:
-        console.print()
-        git_error_panel = Panel(
-            f"[yellow]Warning:[/yellow] Git repository initialization failed\n\n"
-            f"{git_error_message}\n\n"
-            f"[dim]You can initialize git manually later with:[/dim]\n"
-            f"[cyan]cd {project_path if not here else '.'}[/cyan]\n"
-            f"[cyan]git init[/cyan]\n"
-            f"[cyan]git add .[/cyan]\n"
-            f"[cyan]git commit -m \"Initial commit\"[/cyan]",
-            title="[red]Git Initialization Failed[/red]",
-            border_style="red",
-            padding=(1, 2)
-        )
-        console.print(git_error_panel)
-
     if not is_update:
         steps_lines = []
-        if not here:
-            steps_lines.append(f"1. Go to the project folder: [cyan]cd {project_name}[/cyan]")
-            step_num = 2
-        else:
-            steps_lines.append("1. You're already in the project directory!")
-            step_num = 2
+        step_num = 1
 
         # Add Codex-specific setup step if needed
         if "codex" in selected_agents:
@@ -1517,10 +1374,63 @@ def init(
             _format_slash_command_optional_line("clarify"),
             _format_slash_command_optional_line("analyze"),
             _format_slash_command_optional_line("checklist"),
+            _format_slash_command_optional_line("review"),
         ]
         enhancements_panel = Panel("\n".join(enhancement_lines), title="Enhancement Commands", border_style="cyan", padding=(1,2))
         console.print()
         console.print(enhancements_panel)
+
+@app.command(name="install", help="Install or update SpecLite in the current project")
+def install(
+    ai_assistant: str = typer.Option(None, "--ai", help="AI assistant(s) to use (comma-separated): claude, gemini, copilot, cursor-agent, or codex"),
+    script_type: str = typer.Option(None, "--script", help="Script type to use: sh or ps"),
+    ignore_agent_tools: bool = typer.Option(False, "--ignore-agent-tools", help="Skip checks for AI agent tools like Claude Code"),
+    force: bool = typer.Option(False, "--force", help="Force a local install even if .git/ and .speclite/ are missing in the current directory"),
+    debug: bool = typer.Option(False, "--debug", help="Show verbose diagnostic output for installation failures"),
+):
+    """
+    Install or update SpecLite in the current project.
+
+    Run from inside an existing project directory. SpecLite will generate slash
+    commands for your agent(s), install `.speclite/` scripts and templates, and
+    preserve customized templates during upgrades.
+    """
+    show_banner()
+    _install_impl(
+        ai_assistant=ai_assistant,
+        script_type=script_type,
+        ignore_agent_tools=ignore_agent_tools,
+        force=force,
+        debug=debug,
+    )
+
+@app.command(name="init", hidden=True)
+def init(
+    ai_assistant: str = typer.Option(None, "--ai", help="AI assistant(s) to use (comma-separated): claude, gemini, copilot, cursor-agent, or codex"),
+    script_type: str = typer.Option(None, "--script", help="Script type to use: sh or ps"),
+    ignore_agent_tools: bool = typer.Option(False, "--ignore-agent-tools", help="Skip checks for AI agent tools like Claude Code"),
+    force: bool = typer.Option(False, "--force", help="Force a local install even if .git/ and .speclite/ are missing in the current directory"),
+    debug: bool = typer.Option(False, "--debug", help="Show verbose diagnostic output for installation failures"),
+):
+    """Deprecated alias for `speclite install` (kept for compatibility with GitHub SpecKit)."""
+    show_banner()
+    console.print(
+        Panel(
+            "[yellow]`speclite init` is deprecated.[/yellow]\n"
+            "Use [cyan]speclite install[/cyan] instead.",
+            title="[yellow]Deprecation Notice[/yellow]",
+            border_style="yellow",
+            padding=(1, 2),
+        )
+    )
+
+    _install_impl(
+        ai_assistant=ai_assistant,
+        script_type=script_type,
+        ignore_agent_tools=ignore_agent_tools,
+        force=force,
+        debug=debug,
+    )
 
 @app.command()
 def check():

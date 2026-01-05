@@ -12,21 +12,20 @@ This guide will help you get started with Spec-Driven Development using SpecLite
 
 ### Step 1: Install SpecLite
 
-**In your terminal**, run the `speclite` CLI command to initialize your project:
+**In your terminal**, run the `speclite` CLI command from inside your existing project directory:
 
 ```bash
-# Create a new project directory
-uvx --from git+https://github.com/BretJohnson/speclite.git speclite init <PROJECT_NAME>
+uvx --from git+https://github.com/BretJohnson/speclite.git speclite install
 
-# OR initialize in the current directory
-uvx --from git+https://github.com/BretJohnson/speclite.git speclite init .
+# Or specify your AI agent(s) up front (comma-separated)
+uvx --from git+https://github.com/BretJohnson/speclite.git speclite install --ai claude,codex
 ```
 
 Pick script type explicitly (optional):
 
 ```bash
-uvx --from git+https://github.com/BretJohnson/speclite.git speclite init <PROJECT_NAME> --script ps  # Force PowerShell
-uvx --from git+https://github.com/BretJohnson/speclite.git speclite init <PROJECT_NAME> --script sh  # Force POSIX shell
+uvx --from git+https://github.com/BretJohnson/speclite.git speclite install --script ps  # Force PowerShell
+uvx --from git+https://github.com/BretJohnson/speclite.git speclite install --script sh  # Force POSIX shell
 ```
 
 ### Step 2: Define Your Constitution

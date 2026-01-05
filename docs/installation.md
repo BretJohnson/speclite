@@ -15,18 +15,18 @@
 Run from inside an existing project directory:
 
 ```bash
-uvx --from git+https://github.com/BretJohnson/speclite.git speclite install
+uvx speclite-cli install
 ```
 
 Or proactively specify your AI agent(s) during installation (comma-separated):
 
 ```bash
-uvx --from git+https://github.com/BretJohnson/speclite.git speclite install --ai claude
-uvx --from git+https://github.com/BretJohnson/speclite.git speclite install --ai gemini
-uvx --from git+https://github.com/BretJohnson/speclite.git speclite install --ai copilot
-uvx --from git+https://github.com/BretJohnson/speclite.git speclite install --ai cursor-agent
-uvx --from git+https://github.com/BretJohnson/speclite.git speclite install --ai codex
-uvx --from git+https://github.com/BretJohnson/speclite.git speclite install --ai claude,codex
+uvx speclite-cli install --ai claude
+uvx speclite-cli install --ai gemini
+uvx speclite-cli install --ai copilot
+uvx speclite-cli install --ai cursor-agent
+uvx speclite-cli install --ai codex
+uvx speclite-cli install --ai claude,codex
 ```
 
 ### Specify Script Type (Shell vs PowerShell)
@@ -42,8 +42,8 @@ Auto behavior:
 Force a specific script type:
 
 ```bash
-uvx --from git+https://github.com/BretJohnson/speclite.git speclite install --script sh
-uvx --from git+https://github.com/BretJohnson/speclite.git speclite install --script ps
+uvx speclite-cli install --script sh
+uvx speclite-cli install --script ps
 ```
 
 ### Ignore Agent Tools Check
@@ -51,7 +51,7 @@ uvx --from git+https://github.com/BretJohnson/speclite.git speclite install --sc
 If you prefer to get the templates without checking for the right tools:
 
 ```bash
-uvx --from git+https://github.com/BretJohnson/speclite.git speclite install --ai claude --ignore-agent-tools
+uvx speclite-cli install --ai claude --ignore-agent-tools
 ```
 
 ## Verification

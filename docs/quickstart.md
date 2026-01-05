@@ -3,7 +3,7 @@
 This guide will help you get started with Spec-Driven Development using SpecLite.
 
 > [!NOTE]
-> All automation scripts now provide both Bash (`.sh`) and PowerShell (`.ps1`) variants. The `speclite` CLI auto-selects based on OS unless you pass `--script sh|ps`.
+> All automation scripts now provide both Bash (`.sh`) and PowerShell (`.ps1`) variants. The `speclite-cli` command auto-selects based on OS unless you pass `--script sh|ps`.
 
 ## The 6-Step Process
 
@@ -12,20 +12,20 @@ This guide will help you get started with Spec-Driven Development using SpecLite
 
 ### Step 1: Install SpecLite
 
-**In your terminal**, run the `speclite` CLI command from inside your existing project directory:
+**In your terminal**, run the `speclite-cli` command from inside your existing project directory:
 
 ```bash
-uvx --from git+https://github.com/BretJohnson/speclite.git speclite install
+uvx speclite-cli install
 
 # Or specify your AI agent(s) up front (comma-separated)
-uvx --from git+https://github.com/BretJohnson/speclite.git speclite install --ai claude,codex
+uvx speclite-cli install --ai claude,codex
 ```
 
 Pick script type explicitly (optional):
 
 ```bash
-uvx --from git+https://github.com/BretJohnson/speclite.git speclite install --script ps  # Force PowerShell
-uvx --from git+https://github.com/BretJohnson/speclite.git speclite install --script sh  # Force POSIX shell
+uvx speclite-cli install --script ps  # Force PowerShell
+uvx speclite-cli install --script sh  # Force POSIX shell
 ```
 
 ### Step 2: Define Your Constitution
@@ -160,4 +160,4 @@ Finally, implement the solution:
 
 - Read the [complete methodology](../spec-driven.md) for in-depth guidance
 - Check out [more examples](../templates) in the repository
-- Explore the [source code on GitHub](https://github.com/BretJohnson/speclite)
+- Explore the [source code on GitHub](https://github.com/speclite-dev/speclite)

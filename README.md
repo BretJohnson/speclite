@@ -9,10 +9,10 @@
 </p>
 
 <p align="center">
-    <a href="https://github.com/BretJohnson/speclite/actions/workflows/ci.yml"><img src="https://github.com/BretJohnson/speclite/actions/workflows/ci.yml/badge.svg" alt="CI"/></a>
-    <a href="./CHANGELOG.md"><img src="https://img.shields.io/badge/version-0.0.9-blue" alt="Version"/></a>
-    <a href="https://github.com/BretJohnson/speclite/stargazers"><img src="https://img.shields.io/github/stars/BretJohnson/speclite?style=social" alt="GitHub stars"/></a>
-    <a href="https://github.com/BretJohnson/speclite/blob/main/LICENSE"><img src="https://img.shields.io/github/license/BretJohnson/speclite" alt="License"/></a>
+    <a href="https://github.com/speclite-dev/speclite/actions/workflows/ci.yml"><img src="https://github.com/speclite-dev/speclite/actions/workflows/ci.yml/badge.svg" alt="CI"/></a>
+    <a href="./CHANGELOG.md"><img src="https://img.shields.io/badge/version-0.0.10-blue" alt="Version"/></a>
+    <a href="https://github.com/speclite-dev/speclite/stargazers"><img src="https://img.shields.io/github/stars/speclite-dev/speclite?style=social" alt="GitHub stars"/></a>
+    <a href="https://github.com/speclite-dev/speclite/blob/main/LICENSE"><img src="https://img.shields.io/github/license/speclite-dev/speclite" alt="License"/></a>
 </p>
 
 ---
@@ -39,46 +39,19 @@ Spec-Driven Development **flips the script** on traditional software development
 
 ## ⚡ Get Started
 
-### 1. Install SpecLite CLI
+### 1. Install SpecLite in your project
 
-Choose your preferred installation method:
-
-#### Option 1: Persistent Installation (Recommended)
-
-Install once and use everywhere:
+SpecLite CLI is a bootstrapping tool. The simplest way to run it is with `uvx` from inside your project directory:
 
 ```bash
-uv tool install speclite-cli --from git+https://github.com/BretJohnson/speclite.git
-```
-
-Then use the tool directly:
-
-```bash
-# Install/update SpecLite in your current project
-speclite install --ai claude,codex
+# Install SpecLite in your current project
+uvx speclite-cli install --ai claude,codex
 
 # Check installed tools
-speclite check
+uvx speclite-cli check
 ```
 
-To upgrade SpecLite, see the [Upgrade Guide](./docs/upgrade.md) for detailed instructions. Quick upgrade:
-
-```bash
-uv tool install speclite-cli --force --from git+https://github.com/BretJohnson/speclite.git
-```
-
-#### Option 2: One-time Usage
-
-Run directly without installing:
-
-```bash
-uvx --from git+https://github.com/BretJohnson/speclite.git speclite install --ai claude,codex
-```
-
-**Benefits of persistent installation:**
-
-- Tool stays installed and available in PATH
-- Tool management with `uv tool list`, `uv tool upgrade`, `uv tool uninstall`
+Later, to update SpecLite to the latest version in your project, just re-run `uvx speclite-cli install`.
 
 ### 2. Establish project principles
 
@@ -138,7 +111,7 @@ SpecLite currently supports a focused set of AI agents, fewer than [Spec Kit](ht
 
 ## 🔧 SpecLite CLI Reference
 
-The `speclite` command supports the following options:
+The `speclite-cli` command supports the following options:
 
 ### Commands
 
@@ -147,9 +120,7 @@ The `speclite` command supports the following options:
 | `install`  | Install or update SpecLite in the current project                                                 |
 | `check` | Check for installed tools (`git`, `claude`, `gemini`, `code`/`code-insiders`, `cursor-agent`, `codex`) |
 
-> Note: `speclite init` is kept as a deprecated alias for compatibility with GitHub SpecKit.
-
-### `speclite install` Arguments & Options
+### `speclite-cli install` Arguments & Options
 
 | Argument/Option        | Type     | Description                                                                                        |
 | ---------------------- | -------- | -------------------------------------------------------------------------------------------------- |
@@ -162,31 +133,31 @@ The `speclite` command supports the following options:
 
 ```bash
 # Basic installation (interactive AI selection)
-speclite install
+uvx speclite-cli install
 
 # Install with specific AI assistant(s)
-speclite install --ai claude
-speclite install --ai claude,codex
+uvx speclite-cli install --ai claude
+uvx speclite-cli install --ai claude,codex
 
 # Install with Cursor support
-speclite install --ai cursor-agent
+uvx speclite-cli install --ai cursor-agent
 
 # Install with Codex support
-speclite install --ai codex
+uvx speclite-cli install --ai codex
 
 # Install with PowerShell scripts (Windows/cross-platform)
-speclite install --ai copilot --script ps
+uvx speclite-cli install --ai copilot --script ps
 
 # Enable debug output for troubleshooting
-speclite install --ai claude --debug
+uvx speclite-cli install --ai claude --debug
 
 # Check system requirements
-speclite check
+uvx speclite-cli check
 ```
 
 ### Available Slash Commands
 
-After running `speclite install`, your AI coding agent will have access to these slash commands for structured development:
+After running `uvx speclite-cli install`, your AI coding agent will have access to these slash commands for structured development:
 
 #### Core Commands
 
@@ -264,22 +235,22 @@ This README is the primary documentation entry point. The links below take you t
 You can use the SpecLite CLI to install or update SpecLite in an existing project. Run from inside your project directory:
 
 ```bash
-speclite install
+uvx speclite-cli install
 ```
 
 You will be prompted to select the AI agent(s) you are using. You can also proactively specify them directly in the terminal (comma-separated):
 
 ```bash
-speclite install --ai claude
-speclite install --ai gemini
-speclite install --ai copilot
-speclite install --ai claude,codex
+uvx speclite-cli install --ai claude
+uvx speclite-cli install --ai gemini
+uvx speclite-cli install --ai copilot
+uvx speclite-cli install --ai claude,codex
 ```
 
 The CLI will check if you have the required CLIs for your selected agents (Claude Code, Gemini CLI, Cursor CLI, or Codex CLI). If you do not, or you prefer to get the templates without checking for the right tools, use `--ignore-agent-tools` with your command:
 
 ```bash
-speclite install --ai claude --ignore-agent-tools
+uvx speclite-cli install --ai claude --ignore-agent-tools
 ```
 
 ### **STEP 1:** Establish project principles
@@ -532,7 +503,7 @@ rm gcm-linux_amd64.2.6.1.deb
 
 ## 💬 Support
 
-For support, please open a [GitHub issue](https://github.com/BretJohnson/speclite/issues/new). We welcome bug reports, feature requests, and questions about using Spec-Driven Development.
+For support, please open a [GitHub issue](https://github.com/speclite-dev/speclite/issues/new). We welcome bug reports, feature requests, and questions about using Spec-Driven Development.
 
 ## 🙏 Acknowledgements
 

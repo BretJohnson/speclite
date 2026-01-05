@@ -37,7 +37,7 @@ On [GitHub Codespaces](https://github.com/features/codespaces) it's even simpler
 
 1. Fork and clone the repository
 1. Configure and install the dependencies: `uv sync`
-1. Make sure the CLI works on your machine: `uv run speclite --help`
+1. Make sure the CLI works on your machine: `uv run speclite-cli --help`
 1. Create a new branch: `git checkout -b my-branch-name`
 1. Make your change, add tests, and make sure everything still works
 1. Test the CLI functionality with a sample project if relevant
@@ -57,7 +57,7 @@ Here are a few things you can do that will increase the likelihood of your pull 
 
 When working on SpecLite:
 
-1. Test changes with the `speclite` CLI and slash commands (`/sl.specify`, `/sl.plan`, `/sl.tasks`) in your coding agent of choice
+1. Test changes with the `speclite-cli` command and slash commands (`/sl.specify`, `/sl.plan`, `/sl.tasks`) in your coding agent of choice
 2. Verify templates are working correctly in `templates/` directory
 3. Test script functionality in the `scripts/` directory
 4. Ensure memory files (`memory/constitution.md`) are updated if major process changes are made
@@ -68,7 +68,7 @@ When working on SpecLite:
 
    ```bash
    cd <my-test-project>
-   uvx --refresh --from ~/src/speclite speclite install
+   uvx --refresh --from ~/src/speclite speclite-cli install
    ```
 
    `--refresh` ignores what's in the `uvx` cache. It's sometimes needed to get the latest changes.

@@ -25,10 +25,10 @@ jobs:
       - name: Compile sources
         run: uv run python -m compileall src
       - name: CLI smoke test
-        run: uv run --with-editable . -- speclite --help
+        run: uv run --with-editable . -- speclite-cli --help
       - name: CLI install smoke test
         run: |
           rm -rf /tmp/speclite-ci
           mkdir -p /tmp/speclite-ci
           uv run --directory /tmp/speclite-ci --with-editable "${GITHUB_WORKSPACE}" -- \
-            speclite install --ai claude --ignore-agent-tools --script sh --force
+            speclite-cli install --ai claude --ignore-agent-tools --script sh --force

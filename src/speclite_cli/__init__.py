@@ -12,16 +12,12 @@
 SpecLite CLI - Setup tool for SpecLite projects
 
 Usage:
-    uvx speclite-cli.py install
-    uvx speclite-cli.py install --ai claude,codex
-
-Or install globally:
-    uv tool install --from speclite-cli.py speclite-cli
-    speclite install
-    speclite install --ai claude,codex
+    uvx speclite-cli install
+    uvx speclite-cli install --ai claude,codex
+    uvx speclite-cli check
 
 Deprecated (compatibility with GitHub SpecKit):
-    speclite init
+    uvx speclite-cli init
 """
 
 import os
@@ -124,7 +120,7 @@ def _format_slash_command_optional_line(command: str) -> str:
 def _print_slash_commands_help() -> None:
     console.print()
     console.print("[bold]Slash Commands[/bold] (run these in your AI agent):")
-    console.print("[dim]Generated into your agent folder by running [cyan]speclite install[/cyan].[/dim]")
+    console.print("[dim]Generated into your agent folder by running [cyan]speclite-cli install[/cyan].[/dim]")
     console.print()
     console.print("[bold]Core[/bold]")
     for command in SLASH_COMMANDS_NEXT_STEPS:
@@ -420,7 +416,7 @@ class BannerGroup(TyperGroup):
 
 
 app = typer.Typer(
-    name="speclite",
+    name="speclite-cli",
     help="Install or update SpecLite in an existing project",
     add_completion=False,
     invoke_without_command=True,
@@ -446,7 +442,7 @@ def callback(ctx: typer.Context):
     """Show banner when no subcommand is provided."""
     if ctx.invoked_subcommand is None and "--help" not in sys.argv and "-h" not in sys.argv:
         show_banner()
-        console.print(Align.center("[dim]Run 'speclite --help' for usage information[/dim]"))
+        console.print(Align.center("[dim]Run 'speclite-cli --help' for usage information[/dim]"))
         console.print()
 
 def run_command(cmd: list[str], check_return: bool = True, capture: bool = False, shell: bool = False) -> Optional[str]:
@@ -831,7 +827,7 @@ def _render_pending_template_merges_error(prev_default_paths: list[Path], *, pro
             "",
             "\n".join(lines),
             "",
-            "After resolving and deleting the previous default file(s), re-run speclite install.",
+            "After resolving and deleting the previous default file(s), re-run speclite-cli install.",
         ]
     )
 
@@ -892,7 +888,7 @@ def _sync_defaulted_file(
         )
     default_path.rename(backup_path)
     _write_bytes(default_path, new_default_content)
-    # Merge guidance is rendered once at the end of `speclite install` by scanning for `*.default.prev.md` files.
+    # Merge guidance is rendered once at the end of `speclite-cli install` by scanning for `*.default.prev.md` files.
 
 def _stage_templates(templates_dir: Path, dest_dir: Path) -> None:
     """Stage bundled templates into dest_dir (no `.default` variants).
@@ -1173,7 +1169,7 @@ def _install_impl(
                 "- your project root (contains [cyan].git/[/cyan]), or\n"
                 "- a project that already has SpecLite (contains [cyan].speclite/[/cyan]).\n\n"
                 "If you truly want a local install in this directory (without Git), re-run with:\n"
-                "[cyan]speclite install --force[/cyan]",
+                "[cyan]speclite-cli install --force[/cyan]",
                 title="[red]Not a Project Directory[/red]",
                 border_style="red",
                 padding=(1, 2),
@@ -1412,12 +1408,12 @@ def init(
     force: bool = typer.Option(False, "--force", help="Force a local install even if .git/ and .speclite/ are missing in the current directory"),
     debug: bool = typer.Option(False, "--debug", help="Show verbose diagnostic output for installation failures"),
 ):
-    """Deprecated alias for `speclite install` (kept for compatibility with GitHub SpecKit)."""
+    """Deprecated alias for `speclite-cli install` (kept for compatibility with GitHub SpecKit)."""
     show_banner()
     console.print(
         Panel(
-            "[yellow]`speclite init` is deprecated.[/yellow]\n"
-            "Use [cyan]speclite install[/cyan] instead.",
+            "[yellow]`speclite-cli init` is deprecated.[/yellow]\n"
+            "Use [cyan]speclite-cli install[/cyan] instead.",
             title="[yellow]Deprecation Notice[/yellow]",
             border_style="yellow",
             padding=(1, 2),

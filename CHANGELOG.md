@@ -5,6 +5,13 @@ All notable changes to the SpecLite CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.10] - 2026-01-05
+
+### Changed
+
+- Rename the CLI executable to `speclite-cli` (package remains `speclite-cli`).
+- Docs now recommend running via `uvx speclite-cli ...` for bootstrapping.
+
 ## [0.0.9] - 2026-01-04
 
 ### Changed

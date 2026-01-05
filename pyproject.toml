@@ -1,8 +1,24 @@
 [project]
 name = "speclite-cli"
-version = "0.0.9"
+version = "0.0.10"
 description = "SpecLite CLI. A lightweight tool to bootstrap your projects for Spec-Driven Development (SDD)."
+readme = "README.md"
+license = { file = "LICENSE" }
 requires-python = ">=3.11"
+authors = [{ name = "Bret Johnson" }]
+keywords = ["spec-driven-development", "sdd", "specification", "cli"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development",
+]
 dependencies = [
     "typer",
     "rich",
@@ -10,8 +26,13 @@ dependencies = [
     "readchar",
 ]
 
+[project.urls]
+Homepage = "https://github.com/speclite-dev/speclite"
+Repository = "https://github.com/speclite-dev/speclite"
+Changelog = "https://github.com/speclite-dev/speclite/blob/main/CHANGELOG.md"
+
 [project.scripts]
-speclite = "speclite_cli:main"
+speclite-cli = "speclite_cli:main"
 
 [build-system]
 requires = ["hatchling"]
@@ -22,3 +43,13 @@ packages = ["src/speclite_cli"]
 [tool.hatch.build.targets.wheel.force-include]
 "templates" = "speclite_cli/templates"
 "scripts" = "speclite_cli/scripts"
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "src/speclite_cli/**",
+    "templates/**",
+    "scripts/**",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE",
+]

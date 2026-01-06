@@ -81,15 +81,23 @@ If you're familiar with Spec Kit, you'll feel right at home:
 
 ### 1. Install SpecLite in your project
 
-SpecLite CLI is a bootstrapping tool. The simplest way to run it is with `uvx` from inside your project directory:
+Use the SpecLite CLI to add SpecLite to your project.
+
+SpecLite (like Spec Kit) uses [uv](https://docs.astral.sh/uv/) to easily run Python tools. If you don’t already have `uv` installed, follow the official installation instructions:
+https://docs.astral.sh/uv/getting-started/installation/
 
 ```bash
-# Install SpecLite in your current project
-uvx speclite-cli install --ai claude,codex
+# Run from your project's root directory
+uvx speclite-cli install
 
 # Check installed tools
 uvx speclite-cli check
 ```
+
+During installation, SpecLite:
+
+- Prompts you to select the AI agent(s) you want to use (or pass `--ai` to specify them up front).
+- Adds a `.speclite/` directory to your project and generates agent-specific files as needed, including custom prompts/commands in locations like `.claude/commands/` and `.github/prompts/`.
 
 Later, to update SpecLite to the latest version in your project, just re-run `uvx speclite-cli install`.
 

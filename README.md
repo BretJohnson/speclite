@@ -4,7 +4,7 @@
 </div>
 
 <p align="center">
-    <strong>A pragmatic evolution of [GitHub Spec Kit](https://github.com/github/spec-kit) for Spec-Driven Development. Build high-quality software faster.</strong>
+    <strong>A pragmatic evolution of <a href="https://github.com/github/spec-kit">GitHub Spec Kit</a> for Spec-Driven Development. Build high-quality software faster.</strong>
 </p>
 
 <p align="center">

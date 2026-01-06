@@ -1,11 +1,10 @@
 <div align="center">
     <img src="./media/logo_large.webp" alt="SpecLite Logo" width="200" height="200"/>
     <h1>🌱 SpecLite</h1>
-    <h3><em>Build high-quality software faster.</em></h3>
 </div>
 
 <p align="center">
-    <strong>An open source toolkit that allows you to focus on product scenarios and predictable outcomes instead of vibe coding every piece from scratch.</strong>
+    <strong>A pragmatic evolution of [GitHub Spec Kit](https://github.com/github/spec-kit) for Spec-Driven Development. Build high-quality software faster.</strong>
 </p>
 
 <p align="center">

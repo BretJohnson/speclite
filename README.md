@@ -20,6 +20,8 @@
 ## Table of Contents
 
 - [🤔 What is Spec-Driven Development?](#-what-is-spec-driven-development)
+- [💡 Why SpecLite?](#-why-speclite)
+- [✨ SpecLite Improvements over Spec Kit](#-speclite-improvements-over-spec-kit)
 - [⚡ Get Started](#-get-started)
 - [🤖 Supported AI Agents](#-supported-ai-agents)
 - [🔧 SpecLite CLI Reference](#-speclite-cli-reference)
@@ -36,6 +38,44 @@
 ## 🤔 What is Spec-Driven Development?
 
 Spec-Driven Development **flips the script** on traditional software development. For decades, code has been king — specifications were just scaffolding we built and discarded once the "real work" of coding began. Spec-Driven Development changes this: **specifications become executable**, directly generating working implementations rather than just guiding them.
+
+## 💡 Why SpecLite?
+
+[GitHub Spec Kit](https://github.com/github/spec-kit) is a widely used toolkit for Spec-Driven Development. Some teams find it heavyweight for day-to-day work, and it doesn't clearly separate point-in-time change artifacts from long-lived "living specs" that stay updated as a project evolves.
+
+SpecLite started as a fork of Spec Kit to address those gaps while keeping the core workflow: lighter defaults when you want simplicity, full power when you need it, plus smoother updates and support for multi-agent workflows (like using one model to review another).
+
+## ✨ SpecLite Improvements over Spec Kit
+
+### Living Specs vs. Change History
+
+Spec Kit stores specs and their associated plans/tasks/notes in a `specs/` directory. But these files capture point-in-time work—they aren't intended to be long-term living documents kept up to date as the project evolves.
+
+**SpecLite separates these concerns:**
+
+| Directory | Purpose |
+|-----------|---------|
+| `.speclite/changes/` | Historical artifacts—full specs, plans, and tasks for each change (same structure as Spec Kit, renamed to reflect its purpose) |
+| `specs/` | Living documentation—summary specs you maintain long-term |
+
+When you make a change, both locations update: `.speclite/changes/` captures the full details, while `specs/` receives only the high-level updates worth preserving. `.speclite/changes/` is an archive you can keep committed or prune over time.
+
+### Additional Improvements
+
+| Improvement | Description |
+|-------------|-------------|
+| **Review command** | New `/sl.review` command to review current-branch changes against the spec and acceptance criteria |
+| **Multi-agent support** | Configure multiple AI agents per project—useful for cross-agent reviews or when team members use different tools |
+| **Better updates** | Template customizations (and `constitution.md`) are preserved on updates; guided merge workflow when upstream defaults change |
+| **Simplified versioning** | Single version number for CLI and templates (Spec Kit has separate versions) |
+| **Bug fixes** | Various fixes to Spec Kit issues (change number duplication, template newlines, etc.) |
+
+### What Stays the Same
+
+If you're familiar with Spec Kit, you'll feel right at home:
+
+- **Same core workflow** — `specify`, `plan`, `tasks`, `implement`, and other commands work the same way (just with `/sl.` prefix instead of `/speckit.`)
+- **Same default templates** — The spec, plan, and task templates (and prompt instructions) are largely unchanged, so you get the same structured output out of the box (with better support for per-project customization).
 
 ## ⚡ Get Started
 
@@ -180,6 +220,7 @@ Additional commands for enhanced quality and validation:
 | `/sl.clarify`    | Clarify underspecified areas (recommended before `/sl.plan`)                                                                         |
 | `/sl.analyze`    | Cross-artifact consistency & coverage analysis (run after `/sl.tasks`, before `/sl.implement`)                                       |
 | `/sl.checklist`  | Generate custom quality checklists that validate requirements completeness, clarity, and consistency (like "unit tests for English") |
+| `/sl.review`     | Review implementation changes in the current branch against the feature spec and acceptance criteria                                 |
 
 ### Environment Variables
 
@@ -297,7 +338,7 @@ delete any comments that you made, but you can't delete comments anybody else ma
 
 After this prompt is entered, you should see Claude Code kick off the planning and spec drafting process. Claude Code will also trigger some of the built-in scripts to set up the repository.
 
-Once this step is completed, you should have a new branch created (e.g., `001-create-taskify`), as well as a new specification in the `.speclite/changes/001-create-taskify` directory. The top-level `specs/` directory is reserved for living specs (future).
+Once this step is completed, you should have a new branch created (e.g., `001-create-taskify`), as well as a new specification in the `.speclite/changes/001-create-taskify` directory. The top-level `specs/` directory is reserved for living specs you keep up to date over time.
 
 The produced specification should contain a set of user stories and functional requirements, as defined in the template.
 
@@ -478,6 +519,16 @@ The `/sl.implement` command will:
 
 Once the implementation is complete, test the application and resolve any runtime errors that may not be visible in CLI logs (e.g., browser console errors). You can copy and paste such errors back to your AI agent for resolution.
 
+### **STEP 8:** Review implementation
+
+For the best feedback, switch to a different AI agent for review than you used for implementation (an independent verification). Then run the `/sl.review` command to verify that the implementation is correct and matches the specification:
+
+```text
+/sl.review
+```
+
+This creates a `review.md` file with a checklist of issues discovered, each with a unique ID. Then switch back to the implementor agent and prompt it to fix the issues you want to address, checking them off as you go.
+
 </details>
 
 ---
@@ -507,7 +558,7 @@ For support, please open a [GitHub issue](https://github.com/speclite-dev/specli
 
 ## 🙏 Acknowledgements
 
-This project is based on [GitHub Spec Kit](https://github.com/github/spec-kit), which was in turn heavily influenced by and based on the work and research of [John Lam](https://github.com/jflam).
+This project is a fork of [GitHub Spec Kit](https://github.com/github/spec-kit), which was in turn heavily influenced by and based on the work and research of [John Lam](https://github.com/jflam).
 
 ## 📄 License
 

@@ -1,7 +1,7 @@
 [project]
 name = "speclite-cli"
 version = "0.0.10"
-description = "SpecLite CLI. A lightweight tool to bootstrap your projects for Spec-Driven Development (SDD)."
+description = "SpecLite – A Pragmatic Evolution of Spec Kit for Spec-Driven Development"
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.11"
